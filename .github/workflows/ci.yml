@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.10"
+            pytest: "pytest>=8,<9"
+          - os: ubuntu-latest
+            python: "3.11"
+            pytest: "pytest>=9,<10"
+          - os: ubuntu-latest
+            python: "3.12"
+            pytest: "pytest>=9,<10"
+          - os: windows-latest
+            python: "3.13"
+            pytest: "pytest>=9,<10"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --all-extras --dev
+      - run: uv pip install "${{ matrix.pytest }}"
+      - run: uv run pytest -p no:cacheprovider
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src tests/typing/public_api.py
+      - run: uv build
