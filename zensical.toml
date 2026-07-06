@@ -1,35 +1,16 @@
 
 [project]
-repo_name = "chinmaysingh31/talika"
-repo_url = "https://github.com/chinmaysingh31/talika"
+repo_name = "talikadev/talika"
+repo_url = "https://github.com/talikadev/talika"
 site_author = "Chinmay"
 site_description = "Talika Documentation"
 site_dir = "docs_site"
 site_name = "Talika Documentation"
-site_url = "http://localhost:8000/"
+site_url = "https://talikadev.github.io/talika/"
 use_directory_urls = true
 extra_css = ["stylesheets/extra.css", "stylesheets/code-effects.css"]
 extra_javascript = ["javascripts/extra.js"]
-# --8<-- [start:nav]
-# nav = [
-#   {"Get Started" = [
-#     "get-started/index.md",
-#     {"Get Started" = "get-started/get-started.md"},
-#     {"Pre Commit Hooks" = "get-started/pre-commit-hooks.md"},
-#     {"Poe The Poet" = "get-started/poe-the-poet.md"},
-#     {"Linter and Formatter" = [{"Ruff" = "get-started/ruff.md"}]},
-#     {"Type Checker" = [{"ty" = "get-started/ty.md"}]},
-#     {"TOML files" = [
-#       {"pyproject.toml" = "get-started/pyproject-toml.md"},
-#       {"zensical.toml" = "get-started/zensical-toml.md"},
-#     ]},
-#     {"Roadmap" = "get-started/roadmap.md"},
-#   ]},
-#   {"Codebase" = [
-#     "codebase/index.md",
-#     {"Codebase" = "codebase/codebase.md"},
-#   ]},
-# ]
+
 
 nav = [
   {"Talika" = [
@@ -142,20 +123,20 @@ generator = false
 
 # [[project.extra.social]]
 # icon = "fontawesome/brands/github"
-# link = "https://github.com/chinmaysingh31/bdd-tablex"
+# link = "https://github.com/talikadev/talika"
 
-[[project.theme.palette]]
-media = "(prefers-color-scheme)"
-toggle.icon = "lucide/sun-moon"
-toggle.name = "Switch to light mode"
+# [[project.theme.palette]]
+# media = "(prefers-color-scheme)"
+# toggle.icon = "lucide/sun-moon"
+# toggle.name = "Switch to light mode"
 
-[[project.theme.palette]]
-accent = "talika-accent"
-media = "(prefers-color-scheme: light)"
-primary = "amber"
-scheme = "default"
-toggle.icon = "lucide/sun"
-toggle.name = "Switch to dark mode"
+# [[project.theme.palette]]
+# accent = "talika-accent"
+# media = "(prefers-color-scheme: light)"
+# primary = "amber"
+# scheme = "default"
+# toggle.icon = "lucide/sun"
+# toggle.name = "Switch to dark mode"
 
 [[project.theme.palette]]
 accent = "talika-accent"
@@ -163,7 +144,7 @@ media = "(prefers-color-scheme: dark)"
 primary = "amber"
 scheme = "slate"
 toggle.icon = "lucide/moon-star"
-toggle.name = "Switch to system preference"
+# toggle.name = "Switch to system preference"
 
 [project.theme.icon]
 repo = "material/github"
@@ -219,7 +200,7 @@ custom_checkbox = true
 [project.markdown_extensions.pymdownx.tilde]
 
 [project.markdown_extensions.toc]
-permalink = "⚓︎"
+permalink = "#"
 
 [project.markdown_extensions.zensical.extensions.preview]
 configurations = [{targets = {include = ["start/**", "learn/**", "guides/**", "reference/**"]}}]
@@ -230,7 +211,7 @@ default_handler = "python"
 
 [project.plugins.mkdocstrings.handlers.python]
 inventories = ["https://docs.python.org/3/objects.inv"]
-paths = ["."]
+paths = ["src"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 # Docstring parsing style: "google", "numpy", "sphinx", or None

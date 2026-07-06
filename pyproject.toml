@@ -25,6 +25,12 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.urls]
+Documentation = "https://talikadev.github.io/talika/"
+Source = "https://github.com/talikadev/talika"
+Issues = "https://github.com/talikadev/talika/issues"
+Changelog = "https://github.com/talikadev/talika/blob/master/CHANGELOG.md"
+
 [project.optional-dependencies]
 cli = [
     "gherkin-official>=29.0",
@@ -71,7 +77,6 @@ packages = ["src/talika"]
 include = [
     "/CHANGELOG.md",
     "/CONTRIBUTING.md",
-    "/examples",
     "/LICENSE",
     "/README.md",
     "/pyproject.toml",
@@ -86,6 +91,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+extend-exclude = ["docs_src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "D"]
@@ -93,8 +99,6 @@ ignore = ["D105", "D107", "D203", "D213"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
-"examples/**" = ["D"]
-"examples_deprecated/**" = ["D"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -104,4 +108,4 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-exclude = ["examples/", "tests/"]
+exclude = ["tests/"]

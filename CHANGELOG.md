@@ -15,4 +15,4 @@ stable release, additions may refine APIs while preserving the documented
 - Added reusable field components and discriminated record variants.
 - Added default factories, aliases, parsing policies, and error collection.
 - Added schema introspection, transformer composition, and cell DSL composition.
-- Added static Gherkin table checking and the `bdd-tablex check` command.
+- Added static Gherkin table checking and the `talika check` command.

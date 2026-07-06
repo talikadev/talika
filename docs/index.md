@@ -22,7 +22,7 @@ title: Talika
 </style>
 
 <p align="center">
-  <a><img src="http://localhost:8000/assets/images/logotalpha_400.png" alt="Talika"></a>
+  <a href="https://github.com/talikadev/talika"><img src="assets/images/logotalpha_400.png" alt="Talika"></a>
 </p>
 
 <p align="center">
@@ -56,16 +56,16 @@ Declarative schemas for your test data tables.
 
 <p align="center">
 
-<a href="https://github.com/chinmaysingh31/bdd-tablex/actions?query=event%3Apush+branch%3Amaster">
-    <img src="https://github.com/chinmaysingh31/bdd-tablex/actions/workflows/ci.yml/badge.svg?event=push&branch=master" alt="Test">
+<a href="https://github.com/talikadev/talika/actions/workflows/ci.yml">
+    <img src="https://github.com/talikadev/talika/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI">
 </a>
 
-<a href="https://pypi.org/project/fastapi">
-    <img src="https://img.shields.io/pypi/v/fastapi?color=%2334D058&label=pypi%20package" alt="Package version">
+<a href="https://pypi.org/project/talika">
+    <img src="https://img.shields.io/pypi/v/talika?color=%2334D058&label=pypi%20package" alt="Package version">
 </a>
 
-<a href="https://pypi.org/project/fastapi">
-    <img src="https://img.shields.io/pypi/pyversions/fastapi.svg?color=%2334D058" alt="Supported Python versions">
+<a href="https://pypi.org/project/talika">
+    <img src="https://img.shields.io/pypi/pyversions/talika.svg?color=%2334D058" alt="Supported Python versions">
 </a>
 </p>
 
@@ -91,10 +91,8 @@ The key features are:
 
 
 ```bash { .talika-terminal .speed-1 title="Built By" }
-$ Chinmay
-Github - https://github.com/chinmaysingh31
-Email - chinmay@gmail.com
-$ Nishant
-Github - https://github.com/github
-Email - nishant@gmail.com
+$ Source
+Github - https://github.com/talikadev/talika
+$ Documentation
+Pages - https://talikadev.github.io/talika/
 ```

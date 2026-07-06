@@ -20,13 +20,13 @@ uv build
 - Preserve original feature-file locations through every transformation.
 - Keep direct schema parsing independent from pytest and pytest-bdd.
 - Make extension contracts explicit and test custom implementations.
-- Add focused executable examples for every user-facing capability.
+- Add focused tests and documentation for every user-facing capability.
 - Preserve missing-field versus explicitly-empty-cell behavior.
 
 ## Tests
 
-Changes should include focused unit tests and, for user-facing behavior, an
-example under `examples/`. Test error messages through structured attributes
+Changes should include focused unit tests and, for user-facing behavior,
+documentation under `docs/`. Test error messages through structured attributes
 and stable codes where possible rather than relying only on complete strings.
 
 ## Compatibility
