@@ -91,8 +91,8 @@ The key features are:
 
 
 ```bash { .talika-terminal .speed-1 title="Built By" }
-$ Source
-Github - https://github.com/talikadev/talika
-$ Documentation
-Pages - https://talikadev.github.io/talika/
+$ Chinmay
+Github - https://github.com/chinmaysingh31
+$ Nishant
+Github - https://github.com/nishant2224
 ```
