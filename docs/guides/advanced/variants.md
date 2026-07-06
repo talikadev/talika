@@ -58,7 +58,7 @@ variant schema, and then parses only the fields that apply to that schema.
 --8<-- "docs_src/guides/advanced/variants.py:declarative-parse"
 ```
 
-```bash { .talika-terminal title="Selected variant values" .speed-2}
+```bash { .talika-terminal title="Selected variant values" .speed-3}
 --8<-- "docs_src/guides/advanced/variants.py:declarative-output"
 ```
 
@@ -105,7 +105,7 @@ validators, custom output builders, or direct imports from project code.
 --8<-- "docs_src/guides/advanced/variants.py:explicit-parse"
 ```
 
-```bash { .talika-terminal title="Explicit variant records" .speed-2}
+```bash { .talika-terminal title="Explicit variant records" .speed-3}
 --8<-- "docs_src/guides/advanced/variants.py:explicit-output"
 ```
 
@@ -197,7 +197,7 @@ the variant.
 --8<-- "docs_src/guides/advanced/variants.py:parsed-selector"
 ```
 
-```bash { .talika-terminal title="Parsed discriminator value" .speed-2}
+```bash { .talika-terminal title="Parsed discriminator value" .speed-3}
 --8<-- "docs_src/guides/advanced/variants.py:parsed-selector-output"
 ```
 
@@ -222,7 +222,7 @@ from one table.
 --8<-- "docs_src/guides/advanced/variants.py:variant-output-models"
 ```
 
-```bash { .talika-terminal title="Variant output objects" .speed-2}
+```bash { .talika-terminal title="Variant output objects" .speed-3}
 --8<-- "docs_src/guides/advanced/variants.py:variant-output-models-output"
 ```
 
@@ -244,7 +244,7 @@ limited to column-shaped data. Row tables can use the same discriminator model.
 --8<-- "docs_src/guides/advanced/variants.py:row-variants"
 ```
 
-```bash { .talika-terminal title="Row-table variant records" .speed-2}
+```bash { .talika-terminal title="Row-table variant records" .speed-3}
 --8<-- "docs_src/guides/advanced/variants.py:row-variants-output"
 ```
 

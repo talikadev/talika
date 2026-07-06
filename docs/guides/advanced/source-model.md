@@ -41,7 +41,7 @@ upgrades those rows into `TableData` before parsing.
 - `source_column`, the original one-based column number
 - `source_value`, the original authored value
 
-```bash { .talika-terminal title="Source-aware table cells" .speed-2}
+```bash { .talika-terminal title="Source-aware table cells" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:tabledata-output"
 ```
 
@@ -61,7 +61,7 @@ When transformation code changes a logical value, use `cell.with_value(...)`.
 --8<-- "docs_src/guides/advanced/source-model.py:with-value"
 ```
 
-```bash { .talika-terminal title="Current value vs source value" .speed-2}
+```bash { .talika-terminal title="Current value vs source value" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:with-value-output"
 ```
 
@@ -93,7 +93,7 @@ metadata.
 --8<-- "docs_src/guides/advanced/source-model.py:row-source"
 ```
 
-```bash { .talika-terminal title="Row record source metadata" .speed-2}
+```bash { .talika-terminal title="Row record source metadata" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:row-source-output"
 ```
 
@@ -117,7 +117,7 @@ Column-shaped records use the item column as the record location.
 --8<-- "docs_src/guides/advanced/source-model.py:column-source"
 ```
 
-```bash { .talika-terminal title="Column record source metadata" .speed-2}
+```bash { .talika-terminal title="Column record source metadata" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:column-source-output"
 ```
 
@@ -184,7 +184,7 @@ before field parsing.
 --8<-- "docs_src/guides/advanced/source-model.py:transform-schema"
 ```
 
-```bash { .talika-terminal title="Transformed record source" .speed-2}
+```bash { .talika-terminal title="Transformed record source" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:transform-output"
 ```
 
@@ -209,7 +209,7 @@ Custom validators and transformers can build precise diagnostics from a
 --8<-- "docs_src/guides/advanced/source-model.py:error-from-cell"
 ```
 
-```bash { .talika-terminal title="Error created from a source cell" .speed-2}
+```bash { .talika-terminal title="Error created from a source cell" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:error-from-cell-output"
 ```
 

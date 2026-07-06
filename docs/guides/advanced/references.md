@@ -65,7 +65,7 @@ For a single reference, the authored cell contains one key.
 --8<-- "docs_src/guides/advanced/references.py:single-reference"
 ```
 
-```bash { .talika-terminal title="Single reference result" .speed-2}
+```bash { .talika-terminal title="Single reference result" .speed-3}
 --8<-- "docs_src/guides/advanced/references.py:single-reference-output"
 ```
 
@@ -89,7 +89,7 @@ Set `many=True` when a cell can contain several keys.
 --8<-- "docs_src/guides/advanced/references.py:many-reference"
 ```
 
-```bash { .talika-terminal title="Many reference result" .speed-2}
+```bash { .talika-terminal title="Many reference result" .speed-3}
 --8<-- "docs_src/guides/advanced/references.py:many-reference-output"
 ```
 
@@ -121,7 +121,7 @@ that contract.
 --8<-- "docs_src/guides/advanced/references.py:typed-parse"
 ```
 
-```bash { .talika-terminal title="Typed reference result" .speed-2}
+```bash { .talika-terminal title="Typed reference result" .speed-3}
 --8<-- "docs_src/guides/advanced/references.py:typed-output"
 ```
 

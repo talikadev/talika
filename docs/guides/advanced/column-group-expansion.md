@@ -36,13 +36,13 @@ Attach `ColumnGroupExpander` as a table transformer on a `ColumnTable`.
 `NumericRange("..")` turns `1..3` into `1`, `2`, and `3`. `PrefixRepeat(":")`
 turns `3:Article` into three `Article` cells.
 
-```bash { .talika-terminal title="Records produced from grouped columns" .speed-2}
+```bash { .talika-terminal title="Records produced from grouped columns" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:records-output"
 ```
 
 The expanded table is the logical shape the schema parses:
 
-```bash { .talika-terminal title="Expanded logical table" .speed-2}
+```bash { .talika-terminal title="Expanded logical table" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:expanded-table-output"
 ```
 
@@ -54,7 +54,7 @@ The expanded table is the logical shape the schema parses:
 
 Expanded cells still point back to the compact cell that created them.
 
-```bash { .talika-terminal title="Source metadata after expansion" .speed-2}
+```bash { .talika-terminal title="Source metadata after expansion" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:source-output"
 ```
 
@@ -86,7 +86,7 @@ single-key group.
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:alphabetic-suffix"
 ```
 
-```bash { .talika-terminal title="Alphabetic expansion result" .speed-2}
+```bash { .talika-terminal title="Alphabetic expansion result" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:alphabetic-suffix-output"
 ```
 
@@ -113,7 +113,7 @@ Talika base class. The important part is the method signature and returning
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:custom-rules"
 ```
 
-```bash { .talika-terminal title="Custom rule output" .speed-2}
+```bash { .talika-terminal title="Custom rule output" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:custom-rules-output"
 ```
 
@@ -134,19 +134,19 @@ cell with the incorrect count:
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:repeat-error"
 ```
 
-```bash { .talika-terminal title="Repeat count diagnostic" .speed-2}
+```bash { .talika-terminal title="Repeat count diagnostic" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:repeat-error-output"
 ```
 
 If the key row is wrong, the error points to the first cell:
 
-```bash { .talika-terminal title="Wrong key row diagnostic" .speed-2}
+```bash { .talika-terminal title="Wrong key row diagnostic" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:key-error-output"
 ```
 
 If a range is recognized but invalid, the error points to the key cell:
 
-```bash { .talika-terminal title="Invalid range diagnostic" .speed-2}
+```bash { .talika-terminal title="Invalid range diagnostic" .speed-3}
 --8<-- "docs_src/guides/advanced/column-group-expansion.py:range-error-output"
 ```
 

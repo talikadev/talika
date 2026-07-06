@@ -37,7 +37,7 @@ The hook receives a `TableData` object and the current parse context.
 
 The transformed values are what the fields parse:
 
-```bash { .talika-terminal title="Parsed normalized content" .speed-2}
+```bash { .talika-terminal title="Parsed normalized content" .speed-3}
 --8<-- "docs_src/guides/advanced/transform-tables.py:direct-output"
 ```
 
@@ -55,7 +55,7 @@ new table with `TableData.from_cells(...)`.
 `with_value(...)` changes the current value while keeping the original row,
 column, and source text.
 
-```bash { .talika-terminal title="Transformed value with original source" .speed-2}
+```bash { .talika-terminal title="Transformed value with original source" .speed-3}
 --8<-- "docs_src/guides/advanced/transform-tables.py:source-preserved-output"
 ```
 
@@ -83,7 +83,7 @@ schema=None)` method can be used as a schema's `table_transformer`.
 `compose_transformers(...)` runs each transformer from left to right. Each stage
 receives the table returned by the previous stage.
 
-```bash { .talika-terminal title="Pipeline result" .speed-2}
+```bash { .talika-terminal title="Pipeline result" .speed-3}
 --8<-- "docs_src/guides/advanced/transform-tables.py:pipeline-output"
 ```
 
@@ -109,14 +109,14 @@ rows, parsing stops with a table error:
 --8<-- "docs_src/guides/advanced/transform-tables.py:invalid-return"
 ```
 
-```bash { .talika-terminal title="Invalid transformer return" .speed-2}
+```bash { .talika-terminal title="Invalid transformer return" .speed-3}
 --8<-- "docs_src/guides/advanced/transform-tables.py:invalid-return-output"
 ```
 
 Pipeline stages are checked in the same way. If a reusable stage returns the
 wrong kind of value, the error identifies the stage number and class name:
 
-```bash { .talika-terminal title="Invalid pipeline stage" .speed-2}
+```bash { .talika-terminal title="Invalid pipeline stage" .speed-3}
 --8<-- "docs_src/guides/advanced/transform-tables.py:pipeline-invalid-output"
 ```
 
@@ -130,7 +130,7 @@ them as unexpected failures.
 --8<-- "docs_src/guides/advanced/transform-tables.py:intentional-error"
 ```
 
-```bash { .talika-terminal title="Source-aware transformer error" .speed-2}
+```bash { .talika-terminal title="Source-aware transformer error" .speed-3}
 --8<-- "docs_src/guides/advanced/transform-tables.py:intentional-error-output"
 ```
 

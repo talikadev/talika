@@ -64,7 +64,7 @@ scoped to `headline`.
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:token-parse"
 ```
 
-```bash { .talika-terminal title="Token parsing result" .speed-2}
+```bash { .talika-terminal title="Token parsing result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:token-output"
 ```
 
@@ -89,7 +89,7 @@ the value is already known because it is the token being handled.
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:context-schema"
 ```
 
-```bash { .talika-terminal title="Cell context seen by a token" .speed-2}
+```bash { .talika-terminal title="Cell context seen by a token" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:context-output"
 ```
 
@@ -134,7 +134,7 @@ value.
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:scoped-schema"
 ```
 
-```bash { .talika-terminal title="Scoped token precedence" .speed-2}
+```bash { .talika-terminal title="Scoped token precedence" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:scoped-output"
 ```
 
@@ -156,7 +156,7 @@ If no token matches, a `CellDSL` returns the original cell value.
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:passthrough"
 ```
 
-```bash { .talika-terminal title="Literal value passthrough" .speed-2}
+```bash { .talika-terminal title="Literal value passthrough" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-tokens.py:passthrough-output"
 ```
 

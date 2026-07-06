@@ -51,7 +51,7 @@ number of words to generate.
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:pattern-table"
 ```
 
-```bash { .talika-terminal title="Pattern result" .speed-2}
+```bash { .talika-terminal title="Pattern result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:pattern-output"
 ```
 
@@ -71,7 +71,7 @@ Pattern rules use regular-expression `fullmatch`, not substring search.
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:fullmatch-table"
 ```
 
-```bash { .talika-terminal title="Full-match behavior" .speed-2}
+```bash { .talika-terminal title="Full-match behavior" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:fullmatch-output"
 ```
 
@@ -94,7 +94,7 @@ Pattern rules are tried in registration order after exact tokens.
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:pattern-order"
 ```
 
-```bash { .talika-terminal title="First matching pattern wins" .speed-2}
+```bash { .talika-terminal title="First matching pattern wins" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:pattern-order-output"
 ```
 
@@ -125,7 +125,7 @@ handler should run. The handler also receives the original value and context.
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:predicate-schema"
 ```
 
-```bash { .talika-terminal title="Predicate result" .speed-2}
+```bash { .talika-terminal title="Predicate result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:predicate-output"
 ```
 
@@ -150,7 +150,7 @@ it handles any value that did not match a token, pattern, or predicate.
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:fallback-schema"
 ```
 
-```bash { .talika-terminal title="Fallback result" .speed-2}
+```bash { .talika-terminal title="Fallback result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-patterns.py:fallback-output"
 ```
 
