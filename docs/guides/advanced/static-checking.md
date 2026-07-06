@@ -36,7 +36,7 @@ preserves feature-file coordinates, not just table-relative positions.
 --8<-- "docs_src/guides/advanced/static-checking.py:discover-api"
 ```
 
-```bash { .talika-terminal title="Discovered table metadata" .speed-2}
+```bash { .talika-terminal title="Discovered table metadata" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:discover-output"
 ```
 
@@ -58,7 +58,7 @@ tables in one call.
 
 Static checking uses collect mode, so one table can return several diagnostics.
 
-```bash { .talika-terminal title="Collected checker diagnostics" .speed-2}
+```bash { .talika-terminal title="Collected checker diagnostics" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:check-output"
 ```
 
@@ -69,7 +69,7 @@ the structured table error.
 --8<-- "docs_src/guides/advanced/static-checking.py:object-types"
 ```
 
-```bash { .talika-terminal title="Feature table and diagnostic objects" .speed-2}
+```bash { .talika-terminal title="Feature table and diagnostic objects" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:object-types-output"
 ```
 
@@ -79,7 +79,7 @@ that produced it. These objects are useful when you are building a custom
 checker, editor integration, or report generator and do not want to parse CLI
 text.
 
-```bash { .talika-terminal title="Readable table errors" .speed-2}
+```bash { .talika-terminal title="Readable table errors" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:error-output"
 ```
 
@@ -101,7 +101,7 @@ in environments that run feature-file checks.
 --8<-- "docs_src/guides/advanced/static-checking.py:cli-command"
 ```
 
-```bash { .talika-terminal title="Text diagnostics" .speed-2}
+```bash { .talika-terminal title="Text diagnostics" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:cli-output"
 ```
 
@@ -121,7 +121,7 @@ Use JSON when another tool should consume the result.
 --8<-- "docs_src/guides/advanced/static-checking.py:json-command"
 ```
 
-```bash { .talika-terminal title="Structured checker output" .speed-2}
+```bash { .talika-terminal title="Structured checker output" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:json-output"
 ```
 
@@ -160,7 +160,7 @@ The CLI returns conventional exit codes:
 
 When no tables match, the command prints:
 
-```bash { .talika-terminal title="No matching tables" .speed-2}
+```bash { .talika-terminal title="No matching tables" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:no-match-output"
 ```
 

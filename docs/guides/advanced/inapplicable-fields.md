@@ -83,7 +83,7 @@ cells are ignored.
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:empty-table"
 ```
 
-```bash { .talika-terminal title="Empty inapplicable cells are ignored" .speed-2}
+```bash { .talika-terminal title="Empty inapplicable cells are ignored" .speed-3}
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:empty-output"
 ```
 
@@ -113,7 +113,7 @@ is stored separately in `table_extras`.
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:preserve-call"
 ```
 
-```bash { .talika-terminal title="Preserved table extras" .speed-2}
+```bash { .talika-terminal title="Preserved table extras" .speed-3}
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:preserve-output"
 ```
 
@@ -128,7 +128,7 @@ that `Body` is part of the poll schema.
 
 `table_extras` is intentionally separate from parsed schema fields.
 
-```bash { .talika-terminal title="Extras are not schema fields" .speed-2}
+```bash { .talika-terminal title="Extras are not schema fields" .speed-3}
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:as-dict"
 ```
 
@@ -170,7 +170,7 @@ output object rather than mutating the parsed record in place.
 Preserve mode only records non-empty values. Empty cells for other variants are
 ignored, just as they are in strict mode.
 
-```bash { .talika-terminal title="Blank wrong-variant cells" .speed-2}
+```bash { .talika-terminal title="Blank wrong-variant cells" .speed-3}
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:empty-extras-output"
 ```
 
@@ -192,7 +192,7 @@ Python field name.
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:alias-schema"
 ```
 
-```bash { .talika-terminal title="Authored label in extras" .speed-2}
+```bash { .talika-terminal title="Authored label in extras" .speed-3}
 --8<-- "docs_src/guides/advanced/inapplicable-fields.py:alias-output"
 ```
 

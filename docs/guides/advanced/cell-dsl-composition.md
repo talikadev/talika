@@ -72,7 +72,7 @@ Attach the composed parser like any other field parser.
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:compose-call"
 ```
 
-```bash { .talika-terminal title="Composed parser result" .speed-2}
+```bash { .talika-terminal title="Composed parser result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:compose-output"
 ```
 
@@ -99,7 +99,7 @@ If two DSLs can handle the same value, the earlier DSL wins.
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:order-schema"
 ```
 
-```bash { .talika-terminal title="Composition order result" .speed-2}
+```bash { .talika-terminal title="Composition order result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:order-output"
 ```
 
@@ -119,7 +119,7 @@ Each `CellDSL` also has `.compose(...)`.
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:method-compose"
 ```
 
-```bash { .talika-terminal title="Method composition result" .speed-2}
+```bash { .talika-terminal title="Method composition result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:method-output"
 ```
 
@@ -151,7 +151,7 @@ The same two DSLs produce different results depending on order.
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:fallback-schema"
 ```
 
-```bash { .talika-terminal title="Fallback order result" .speed-2}
+```bash { .talika-terminal title="Fallback order result" .speed-3}
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:fallback-output"
 ```
 

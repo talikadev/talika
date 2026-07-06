@@ -31,7 +31,7 @@ serialize, or use as input for documentation and editor tooling.
 
 The contract starts with the table-level shape and policies.
 
-```bash { .talika-terminal title="Schema identity and policies" .speed-2}
+```bash { .talika-terminal title="Schema identity and policies" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:identity-output"
 ```
 
@@ -47,7 +47,7 @@ unknown table labels and fields that belong to a different selected variant.
 
 Each declared field becomes a `FieldContract`.
 
-```bash { .talika-terminal title="Field summary" .speed-2}
+```bash { .talika-terminal title="Field summary" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:fields-output"
 ```
 
@@ -55,7 +55,7 @@ Field contracts include the Python attribute name, authored table label,
 aliases, required flag, ID/discriminator flags, default information, parser
 name, reference target, and empty-cell policy.
 
-```bash { .talika-terminal title="One field as a dictionary" .speed-2}
+```bash { .talika-terminal title="One field as a dictionary" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:field-dict-output"
 ```
 
@@ -70,7 +70,7 @@ objects.
 
 Discriminator variants appear in the same contract.
 
-```bash { .talika-terminal title="Variant contracts" .speed-2}
+```bash { .talika-terminal title="Variant contracts" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:variants-output"
 ```
 
@@ -78,7 +78,7 @@ Each item in `contract.variants` is a `VariantContract`. It includes the
 discriminator value, generated schema name, active fields, output model name,
 and output builder name.
 
-```bash { .talika-terminal title="A variant-specific field" .speed-2}
+```bash { .talika-terminal title="A variant-specific field" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:variant-field-output"
 ```
 
@@ -98,7 +98,7 @@ models.
 --8<-- "docs_src/guides/advanced/schema-contracts.py:hook-schema"
 ```
 
-```bash { .talika-terminal title="Hook metadata" .speed-2}
+```bash { .talika-terminal title="Hook metadata" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:hook-output"
 ```
 
@@ -120,7 +120,7 @@ The command imports the schema target and renders `describe()` output. Like
 --8<-- "docs_src/guides/advanced/schema-contracts.py:cli-text-command"
 ```
 
-```bash { .talika-terminal title="Human-readable contract" .speed-2}
+```bash { .talika-terminal title="Human-readable contract" .speed-3}
 --8<-- "docs_src/guides/advanced/schema-contracts.py:cli-text-output"
 ```
 

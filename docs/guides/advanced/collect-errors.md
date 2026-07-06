@@ -101,7 +101,7 @@ supports `len(...)`, and can be iterated directly.
 --8<-- "docs_src/guides/advanced/collect-errors.py:inspect-errors"
 ```
 
-```bash { .talika-terminal title="Inspecting collected errors" .speed-2}
+```bash { .talika-terminal title="Inspecting collected errors" .speed-3}
 --8<-- "docs_src/guides/advanced/collect-errors.py:inspect-errors-output"
 ```
 

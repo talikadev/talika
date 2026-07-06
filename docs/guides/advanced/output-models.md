@@ -35,7 +35,7 @@ Without an output model, `parse()` returns schema record objects.
 --8<-- "docs_src/guides/advanced/output-models.py:user-table"
 ```
 
-```bash { .talika-terminal title="Default parse output" .speed-2}
+```bash { .talika-terminal title="Default parse output" .speed-3}
 --8<-- "docs_src/guides/advanced/output-models.py:record-output"
 ```
 
@@ -74,7 +74,7 @@ example below, `age` reaches the dataclass as `34`, not `"34"`.
 --8<-- "docs_src/guides/advanced/output-models.py:parse-vs-records"
 ```
 
-```bash { .talika-terminal title="Public output and schema records" .speed-2}
+```bash { .talika-terminal title="Public output and schema records" .speed-3}
 --8<-- "docs_src/guides/advanced/output-models.py:parse-vs-records-output"
 ```
 
@@ -208,7 +208,7 @@ field values as keyword arguments.
 --8<-- "docs_src/guides/advanced/output-models.py:pydantic-model"
 ```
 
-```bash { .talika-terminal title="Pydantic output" .speed-2}
+```bash { .talika-terminal title="Pydantic output" .speed-3}
 --8<-- "docs_src/guides/advanced/output-models.py:pydantic-output"
 ```
 
