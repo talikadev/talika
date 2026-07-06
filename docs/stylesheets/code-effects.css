@@ -1,0 +1,282 @@
+:root {
+  --talika-terminal-bg: #171310;
+  --talika-terminal-bg-soft: #211a16;
+  --talika-terminal-border: rgba(108, 74, 46, 0.24);
+  --talika-terminal-fg: #f7efe7;
+  --talika-terminal-muted: rgba(247, 239, 231, 0.58);
+  --talika-terminal-output: rgba(247, 239, 231, 0.72);
+  --talika-terminal-command: #fffaf3;
+  --talika-terminal-prompt: #f8a130;
+  --talika-terminal-root: #ff78ab;
+  --talika-terminal-note: #ffd18a;
+  --talika-terminal-accent: #cb0663;
+  --talika-terminal-font-size: 0.64rem;
+  --talika-terminal-font-size-mobile: 0.61rem;
+  --talika-terminal-line-height: 1.48;
+  --talika-terminal-title-size: 0.58rem;
+  --talika-terminal-button-size: 0.56rem;
+  --talika-terminal-screen-padding-block: 0.58rem;
+  --talika-terminal-screen-padding-inline: 0.72rem;
+  --talika-terminal-chrome-padding-block: 0.3rem;
+  --talika-terminal-chrome-padding-inline: 0.52rem;
+  --talika-terminal-shadow: 0 12px 30px rgba(24, 14, 8, 0.16);
+}
+
+[data-md-color-scheme="slate"] {
+  --talika-terminal-bg: #100d11;
+  --talika-terminal-bg-soft: #1b151d;
+  --talika-terminal-border: rgba(255, 190, 118, 0.16);
+  --talika-terminal-fg: #fff4ea;
+  --talika-terminal-muted: rgba(255, 244, 234, 0.56);
+  --talika-terminal-output: rgba(255, 244, 234, 0.72);
+  --talika-terminal-command: #fffaf5;
+  --talika-terminal-prompt: #ffb756;
+  --talika-terminal-root: #ff6fa7;
+  --talika-terminal-note: #ffd98e;
+  --talika-terminal-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+}
+
+.md-typeset .talika-terminal.talika-terminal--enhanced {
+  background: var(--talika-terminal-bg);
+  border: 1px solid var(--talika-terminal-border);
+  border-radius: 7px;
+  box-shadow: var(--talika-terminal-shadow);
+  color: var(--talika-terminal-fg);
+  margin: 0.85em 0 1em;
+  overflow: hidden;
+}
+
+.md-typeset .talika-terminal.talika-terminal--enhanced > pre,
+.md-typeset .talika-terminal.talika-terminal--enhanced > .filename,
+.md-typeset .talika-terminal.talika-terminal--enhanced > .md-clipboard {
+  display: none !important;
+}
+
+.md-typeset .talika-terminal__player {
+  background:
+    linear-gradient(135deg, rgba(203, 6, 99, 0.14), transparent 34%),
+    linear-gradient(160deg, rgba(248, 161, 48, 0.11), transparent 42%),
+    var(--talika-terminal-bg);
+}
+
+.md-typeset .talika-terminal__chrome {
+  align-items: center;
+  background: var(--talika-terminal-bg-soft);
+  background: color-mix(in srgb, var(--talika-terminal-bg-soft) 88%, black);
+  border-bottom: 1px solid var(--talika-terminal-border);
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 1.72rem;
+  padding: var(--talika-terminal-chrome-padding-block) var(--talika-terminal-chrome-padding-inline);
+}
+
+.md-typeset .talika-terminal__lights {
+  display: inline-flex;
+  gap: 0.26rem;
+}
+
+.md-typeset .talika-terminal__light {
+  border-radius: 999px;
+  display: inline-block;
+  height: 0.44rem;
+  width: 0.44rem;
+}
+
+.md-typeset .talika-terminal__light:nth-child(1) {
+  background: #ff6b6b;
+}
+
+.md-typeset .talika-terminal__light:nth-child(2) {
+  background: #ffd166;
+}
+
+.md-typeset .talika-terminal__light:nth-child(3) {
+  background: #5cd85c;
+}
+
+.md-typeset .talika-terminal__title {
+  color: var(--talika-terminal-muted);
+  font-size: var(--talika-terminal-title-size);
+  font-weight: 650;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-typeset .talika-terminal__actions {
+  display: inline-flex;
+  gap: 0.28rem;
+}
+
+.md-typeset .talika-terminal__button {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 6px;
+  color: var(--talika-terminal-muted);
+  cursor: pointer;
+  font-family: var(--md-text-font-family, var(--md-text-font, system-ui)), sans-serif;
+  font-size: var(--talika-terminal-button-size);
+  font-weight: 650;
+  line-height: 1;
+  min-height: 1.12rem;
+  padding: 0 0.38rem;
+}
+
+.md-typeset .talika-terminal__button:hover,
+.md-typeset .talika-terminal__button:focus-visible {
+  background: rgba(248, 161, 48, 0.14);
+  border-color: rgba(248, 161, 48, 0.38);
+  color: var(--talika-terminal-fg);
+}
+
+.md-typeset .talika-terminal__button:focus-visible {
+  outline: 2px solid var(--talika-terminal-prompt);
+  outline-offset: 2px;
+}
+
+.md-typeset .talika-terminal__button:disabled {
+  cursor: progress;
+  opacity: 0.58;
+}
+
+.md-typeset .talika-terminal__screen {
+  font-family:
+    var(--md-code-font-family, var(--md-code-font, "SFMono-Regular")),
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+  font-size: var(--talika-terminal-font-size);
+  line-height: var(--talika-terminal-line-height);
+  overflow-x: auto;
+  padding: var(--talika-terminal-screen-padding-block) var(--talika-terminal-screen-padding-inline)
+    calc(var(--talika-terminal-screen-padding-block) + 0.08rem);
+  scrollbar-color: rgba(248, 161, 48, 0.45) transparent;
+  scrollbar-width: thin;
+}
+
+.md-typeset .talika-terminal__screen::-webkit-scrollbar {
+  height: 0.55rem;
+}
+
+.md-typeset .talika-terminal__screen::-webkit-scrollbar-thumb {
+  background: rgba(248, 161, 48, 0.36);
+  border-radius: 999px;
+}
+
+.md-typeset .talika-terminal__line {
+  align-items: baseline;
+  display: grid;
+  gap: 0.44rem;
+  grid-template-columns: max-content max-content;
+  min-height: 0.94rem;
+  min-width: max-content;
+  opacity: 0;
+  transform: translateY(0.22rem);
+  transition: opacity 180ms ease, transform 180ms ease;
+  white-space: pre;
+}
+
+.md-typeset .talika-terminal__line[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.md-typeset .talika-terminal__line.is-typing {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.md-typeset .talika-terminal__line + .talika-terminal__line {
+  margin-top: 0.04rem;
+}
+
+.md-typeset .talika-terminal__prompt {
+  color: var(--talika-terminal-prompt);
+  font-weight: 800;
+  user-select: none;
+}
+
+.md-typeset .talika-terminal__line--root .talika-terminal__prompt {
+  color: var(--talika-terminal-root);
+}
+
+.md-typeset .talika-terminal__line--output {
+  gap: 0;
+  grid-template-columns: 0 max-content;
+}
+
+.md-typeset .talika-terminal__line--output .talika-terminal__prompt {
+  overflow: hidden;
+}
+
+.md-typeset .talika-terminal__line--blank {
+  min-height: 0.46rem;
+}
+
+.md-typeset .talika-terminal__code {
+  color: var(--talika-terminal-command);
+}
+
+.md-typeset .talika-terminal__line--output .talika-terminal__code {
+  color: var(--talika-terminal-output);
+}
+
+.md-typeset .talika-terminal__line--note .talika-terminal__code {
+  color: var(--talika-terminal-note);
+  font-style: italic;
+}
+
+.md-typeset .talika-terminal__line.is-typing .talika-terminal__code::after {
+  animation: talika-terminal-caret 1s steps(2, start) infinite;
+  background: var(--talika-terminal-prompt);
+  content: "";
+  display: inline-block;
+  height: 0.88em;
+  margin-left: 0.1rem;
+  transform: translateY(0.12em);
+  width: 0.42em;
+}
+
+@keyframes talika-terminal-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .talika-terminal__chrome {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .md-typeset .talika-terminal__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .md-typeset .talika-terminal__screen {
+    font-size: var(--talika-terminal-font-size-mobile);
+    padding: 0.52rem 0.62rem 0.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .talika-terminal__line {
+    transition: none;
+    transform: none;
+  }
+
+  .md-typeset .talika-terminal__line.is-typing .talika-terminal__code::after {
+    animation: none;
+  }
+}

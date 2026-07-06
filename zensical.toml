@@ -1,0 +1,298 @@
+
+[project]
+repo_name = "chinmaysingh31/talika"
+repo_url = "https://github.com/chinmaysingh31/talika"
+site_author = "Chinmay"
+site_description = "Talika Documentation"
+site_dir = "docs_site"
+site_name = "Talika Documentation"
+site_url = "http://localhost:8000/"
+use_directory_urls = true
+extra_css = ["stylesheets/extra.css", "stylesheets/code-effects.css"]
+extra_javascript = ["javascripts/extra.js"]
+# --8<-- [start:nav]
+# nav = [
+#   {"Get Started" = [
+#     "get-started/index.md",
+#     {"Get Started" = "get-started/get-started.md"},
+#     {"Pre Commit Hooks" = "get-started/pre-commit-hooks.md"},
+#     {"Poe The Poet" = "get-started/poe-the-poet.md"},
+#     {"Linter and Formatter" = [{"Ruff" = "get-started/ruff.md"}]},
+#     {"Type Checker" = [{"ty" = "get-started/ty.md"}]},
+#     {"TOML files" = [
+#       {"pyproject.toml" = "get-started/pyproject-toml.md"},
+#       {"zensical.toml" = "get-started/zensical-toml.md"},
+#     ]},
+#     {"Roadmap" = "get-started/roadmap.md"},
+#   ]},
+#   {"Codebase" = [
+#     "codebase/index.md",
+#     {"Codebase" = "codebase/codebase.md"},
+#   ]},
+# ]
+
+nav = [
+  {"Talika" = [
+    {"Talika" = "index.md"}
+  ]},
+  {"Getting Started" = [
+    {"Why Talika?" = "start/why.md"},
+    {"Installation" = "start/install.md"},
+    {"Quickstart" = "start/quickstart.md"},
+  ]},
+  {"Learn" = [
+    {"BDD Data Tables" = "learn/datatables.md"},
+    {"The Table Boundary" = "learn/table-boundary.md"},
+    {"Tables As Contracts" = "learn/table-contracts.md"},
+    {"Choosing A Table Shape" = "learn/choosing-table-shape.md"},
+    {"Cells Are Text First" = "learn/cells-are-text.md"},
+    {"Missing, Empty, And Defaults" = "learn/missing-empty-defaults.md"},
+    {"Table Vocabulary" = "learn/table-vocabulary.md"},
+    {"Validation Layers" = "learn/validation-layers.md"},
+    {"Source-Aware Diagnostics" = "learn/source-aware-diagnostics.md"},
+    {"From Records To Test Objects" = "learn/records-and-outputs.md"},
+    {"Evolving Tables Safely" = "learn/evolving-tables.md"},
+    {"The Table Lifecycle" = "learn/table-lifecycle.md"},
+  ]},
+  {"Guides" = [
+    {"Basic" = [
+      {"Row Tables" = "guides/basic/row-tables.md"},
+      {"Column Tables" = "guides/basic/column-tables.md"},
+      {"Fields" = "guides/basic/fields.md"},
+      {"Type Annotations" = "guides/basic/type-annotations.md"},
+      {"Parser Factories" = "guides/basic/parser-factories.md"},
+      {"Custom Parsers" = "guides/basic/custom-parsers.md"},
+      {"Missing, Empty, Defaults" = "guides/basic/missing-empty-defaults.md"},
+      {"Record Validation" = "guides/basic/record-validation.md"},
+      {"Table Validation" = "guides/basic/table-validation.md"},
+      {"pytest-bdd" = "guides/basic/pytest-bdd.md"},
+    ]},
+    {"Advanced" = [
+      {"Collect Errors" = "guides/advanced/collect-errors.md"},
+      {"Output Models" = "guides/advanced/output-models.md"},
+      {"References" = "guides/advanced/references.md"},
+      {"Variants" = "guides/advanced/variants.md"},
+      {"Inapplicable Fields" = "guides/advanced/inapplicable-fields.md"},
+      {"CellDSL Tokens" = "guides/advanced/cell-dsl-tokens.md"},
+      {"CellDSL Patterns" = "guides/advanced/cell-dsl-patterns.md"},
+      {"CellDSL Composition" = "guides/advanced/cell-dsl-composition.md"},
+      {"Source Model" = "guides/advanced/source-model.md"},
+      {"Transform Tables" = "guides/advanced/transform-tables.md"},
+      {"Column Group Expansion" = "guides/advanced/column-group-expansion.md"},
+      {"Static Checking" = "guides/advanced/static-checking.md"},
+      {"Schema Contracts" = "guides/advanced/schema-contracts.md"},
+    ]},
+  ]},
+  {"Reference" = [
+    "reference/index.md",
+    {"Package API" = "reference/public-api.md"},
+    {"Schema" = "reference/schema.md"},
+    {"Fields" = "reference/fields.md"},
+    {"Parsers" = "reference/parsers.md"},
+    {"Annotation Parsers" = "reference/annotations.md"},
+    {"Errors" = "reference/errors.md"},
+    {"Parse Context" = "reference/context.md"},
+    {"Tables And Cells" = "reference/table.md"},
+    {"Record Sources" = "reference/sources.md"},
+    {"Records" = "reference/records.md"},
+    {"CellDSL" = "reference/dsl.md"},
+    {"Transformers" = "reference/transformers.md"},
+    {"Column Group Expansion" = "reference/group-expansion.md"},
+    {"Introspection" = "reference/introspection.md"},
+    {"Parsing Helpers" = "reference/parsing.md"},
+    {"Static Checking" = "reference/checker.md"},
+    {"Pytest Plugin" = "reference/pytest-plugin.md"},
+    {"CLI" = "reference/cli.md"},
+  ]},
+]
+
+
+[project.theme]
+features = [
+  "announce.dismiss",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.code.select",
+  "content.footnote.tooltips",
+  "content.tabs.link",
+  "content.tooltips",
+  "header.autohide",
+  "navigation.expand", 
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.instant.progress",
+  "navigation.path", # "navigation.sections",
+  "navigation.tabs", # "navigation.tabs.sticky",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+]
+
+favicon = "assets/images/svg/logoalpha.svg"
+language = "en"
+logo = "assets/images/svg/logoalpha.svg"
+font.text = "Google Sans"
+font.code = "Google Sans Code"
+custom_dir = "docs/overrides"
+
+[project.extra]
+generator = false
+
+# [[project.extra.social]]
+# icon = "fontawesome/brands/github"
+# link = "https://github.com/chinmaysingh31/bdd-tablex"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+accent = "talika-accent"
+media = "(prefers-color-scheme: light)"
+primary = "amber"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+accent = "talika-accent"
+media = "(prefers-color-scheme: dark)"
+primary = "amber"
+scheme = "slate"
+toggle.icon = "lucide/moon-star"
+toggle.name = "Switch to system preference"
+
+[project.theme.icon]
+repo = "material/github"
+
+[project.theme.icon.tag]
+default = "lucide/hash"
+
+[project.extra.tags]
+docs = "docs"
+
+[project.plugins.offline]
+enabled = true
+
+[project.markdown_extensions.admonition]
+
+[project.markdown_extensions.attr_list]
+
+[project.markdown_extensions.pymdownx.caret]
+
+[project.markdown_extensions.pymdownx.details]
+
+[project.markdown_extensions.pymdownx.emoji]
+emoji_generator = "zensical.extensions.emoji.to_svg"
+emoji_index = "zensical.extensions.emoji.twemoji"
+options.custom_icons = ["docs/overrides/.icons"]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+auto_title = false
+line_spans = "__span"
+# linenums = true
+linenums_style = "pymdownx-inline"
+pygments_lang_class = true
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+
+[project.markdown_extensions.pymdownx.mark]
+
+[project.markdown_extensions.pymdownx.snippets]
+auto_append = ["includes/abbreviations.md"]
+
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  {name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format"},
+]
+
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+
+[project.markdown_extensions.pymdownx.tilde]
+
+[project.markdown_extensions.toc]
+permalink = "⚓︎"
+
+[project.markdown_extensions.zensical.extensions.preview]
+configurations = [{targets = {include = ["start/**", "learn/**", "guides/**", "reference/**"]}}]
+
+
+[project.plugins.mkdocstrings]
+default_handler = "python"
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["."]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+# Docstring parsing style: "google", "numpy", "sphinx", or None
+docstring_style = "google"
+
+# Show the source code of the object in the documentation
+show_source = false
+
+# Show a heading for the root object (the one specified in the ::: directive)
+show_root_heading = true
+
+# Show the full dotted path (e.g., framework.core.logging) for the root object
+show_root_full_path = false
+
+# Show the full dotted path for all objects, not just the root
+show_object_full_path = false
+
+# Show headings to group members by category (Methods, Attributes, Classes, etc.)
+show_category_heading = false
+
+# Include objects that have no docstring in the output
+show_if_no_docstring = false
+
+# Show function/method signatures (parameters, return type)
+show_signature = true
+
+# Show type annotations in signatures (e.g., def func(x: int) -> str)
+show_signature_annotations = true
+show_signature_type_parameters = true
+# Render signature in a separate block above the docstring (vs inline)
+separate_signature = true
+show_attribute_values = true
+
+# Convert type annotations in signatures to clickable cross-references
+signature_crossrefs = true
+
+# Maximum line length for formatting signatures
+line_length = 88
+
+# Include inherited members when documenting a class
+inherited_members = false
+
+# Order in which to list members: "source" (file order) or "alphabetical"
+members_order = "source"
+
+# members = true
+filters = []
+
+# Style for docstring sections (Parameters, Returns, Raises): "table", "list", "spacy"
+docstring_section_style = "list"
+
+# Merge __init__ method documentation into the class docstring
+merge_init_into_class = true
+
+# Show parameter names as headings above their descriptions
+parameter_headings = false
+
+# Show a badge indicating the symbol type (function, class, method, etc.) next to headings
+show_symbol_type_heading = true
+
+# Show symbol types in the table of contents
+show_symbol_type_toc = true
+
+
+
