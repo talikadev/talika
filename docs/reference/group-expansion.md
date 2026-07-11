@@ -1,7 +1,7 @@
 ---
 icon: lucide/repeat
 tags:
-  - API reference
+  
   - Column groups
   - Table expansion
   - Column tables
