@@ -2,7 +2,6 @@
 icon: lucide/circle-help
 tags:
   - Overview
-  - BDD
   - Data tables
   - Schemas
 ---

@@ -1,7 +1,7 @@
 ---
 icon: lucide/notebook-tabs
 tags:
-  - API reference
+  
   - Package documentation
   - Talika
 ---
