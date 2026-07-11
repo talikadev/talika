@@ -1,0 +1,86 @@
+name: Publish to PyPI
+run-name: Publish ${{ inputs.release_tag }} to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub Release tag to publish, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Retrieve release distributions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9.-]+)?$ ]]; then
+            echo "Expected a version tag such as v0.1.0 or v0.2.0rc1" >&2
+            exit 1
+          fi
+
+      - name: Download distributions from GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: >-
+          gh release download "$RELEASE_TAG"
+          --repo "$GITHUB_REPOSITORY"
+          --pattern "*.whl"
+          --pattern "*.tar.gz"
+          --dir dist
+
+      - name: Validate distribution files
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          version="${RELEASE_TAG#v}"
+          shopt -s nullglob
+          wheels=(dist/talika-"$version"-*.whl)
+          sdists=(dist/talika-"$version".tar.gz)
+          all_files=(dist/*)
+
+          if (( ${#wheels[@]} != 1 || ${#sdists[@]} != 1 || ${#all_files[@]} != 2 )); then
+            echo "The release must contain exactly one talika $version wheel and one source distribution" >&2
+            printf '%s\n' "${all_files[@]}" >&2
+            exit 1
+          fi
+
+      - name: Store verified distributions
+        uses: actions/upload-artifact@v5
+        with:
+          name: pypi-distributions
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish distributions to PyPI
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/talika
+    permissions:
+      id-token: write
+    steps:
+      - name: Download verified distributions
+        uses: actions/download-artifact@v6
+        with:
+          name: pypi-distributions
+          path: dist/
+
+      - name: Publish distributions
+        uses: pypa/gh-action-pypi-publish@release/v1
