@@ -1,5 +1,10 @@
 ---
 icon: lucide/binary
+tags:
+  - Type annotations
+  - Type conversion
+  - Schemas
+  - Parsing
 ---
 
 # Type Annotations

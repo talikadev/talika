@@ -1,10 +1,15 @@
 ---
 icon: lucide/circle-help
+tags:
+  - Overview
+  - BDD
+  - Data tables
+  - Schemas
 ---
 
 # Why Talika?
 
-We built Talika because we needed BDD data tables to stay simple for authors
+We built Talika because we needed Gherkin data tables to stay simple for authors
 and still be reliable for test code.
 
 The core package has zero runtime dependencies. You can start with plain Python

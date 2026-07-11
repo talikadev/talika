@@ -1,5 +1,9 @@
 ---
 icon: lucide/binary
+tags:
+  
+  - Type annotations
+  - Parsers
 ---
 
 # Annotation Parsers

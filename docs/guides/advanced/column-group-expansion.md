@@ -1,5 +1,10 @@
 ---
 icon: lucide/repeat
+tags:
+  - Column tables
+  - Column groups
+  - Table expansion
+  - Source metadata
 ---
 
 # Column Group Expansion

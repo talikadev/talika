@@ -1,5 +1,10 @@
 ---
 icon: lucide/git-branch
+tags:
+  - Schema evolution
+  - Backward compatibility
+  - Aliases
+  - Continuous integration
 ---
 
 # Evolving Tables Safely
@@ -33,6 +38,9 @@ Both can be supported while the team migrates:
 The important part is that the old wording is visible. It is accepted because
 the project chose to accept it, not because the parser ignored differences.
 
+See [field aliases](../guides/basic/fields.md#aliases){ data-preview } for the
+concrete migration mechanism.
+
 !!! note "Compatibility should have a reason"
     Aliases are useful for migration, shared vocabulary, and external wording.
     They should not become a junk drawer for every spelling that ever appeared.
@@ -64,6 +72,8 @@ That should be a short-lived compatibility strategy, not the permanent design.
 When table rules are explicit, a checker can validate feature files before the
 scenario runs. That gives teams earlier feedback when a label changed, a parser
 became stricter, or a compatibility alias was removed.
+
+The static-checking guide shows how to [check feature tables from the CLI](../guides/advanced/static-checking.md#check-from-the-cli){ data-preview }.
 
 !!! tip "Evolve in public"
     Feature tables are shared language. When you change that language, make the

@@ -1,5 +1,11 @@
 ---
 icon: lucide/clipboard-check
+tags:
+  - pytest-bdd
+  - BDD
+  - Data tables
+  - Fixtures
+  - Parsing
 ---
 
 # pytest-bdd

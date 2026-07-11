@@ -1,5 +1,11 @@
 ---
 icon: lucide/package
+tags:
+  - Installation
+  - Python
+  - pip
+  - uv
+  - Optional dependencies
 ---
 
 # Installation

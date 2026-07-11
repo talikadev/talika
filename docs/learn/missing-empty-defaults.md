@@ -1,5 +1,10 @@
 ---
 icon: lucide/list-minus
+tags:
+  - Missing values
+  - Empty cells
+  - Defaults
+  - Data modeling
 ---
 
 # Missing, Empty, And Defaults
@@ -53,6 +58,9 @@ Some fields really do allow an empty or null-like value. Make that explicit:
 The important habit is to decide. Once missing, empty, and default values are
 separate ideas, feature files become easier to review and parser behavior
 becomes easier to explain.
+
+Compare the concrete behavior for [missing optional fields](../guides/basic/missing-empty-defaults.md#missing-optional-fields){ data-preview }
+and [present but empty cells](../guides/basic/missing-empty-defaults.md#empty-cells-are-present-values){ data-preview }.
 
 !!! warning "Avoid accidental defaults"
     A default should not hide an incomplete table. Use defaults when omission is

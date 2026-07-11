@@ -1,10 +1,14 @@
 ---
 icon: lucide/table
+tags:
+  - Data tables
+  - pytest-bdd
+  - Parsing
 ---
 
-# BDD Data Tables
+# Gherkin Data Tables
 
-BDD data tables are a friendly way to put several related examples beside a
+Gherkin data tables are a friendly way to put several related examples beside a
 Gherkin step. They let a scenario say, "these users exist" or "these content
 items are available" without turning every value into a separate sentence.
 
@@ -63,9 +67,12 @@ works that way.
 
 ## The useful mental model
 
-Think of a BDD data table as authored test data, not as ready-to-use Python
+Think of a Gherkin data table as authored test data, not as ready-to-use Python
 data. The table is readable for humans first. A table layer gives it shape,
 types, validation, and diagnostics before the rest of the test uses it.
+
+For the practical workflow, see how to [parse a table directly in a step](../guides/basic/pytest-bdd.md#parse-directly-in-a-step){ data-preview }
+and how to [define a row-table contract](../guides/basic/row-tables.md#define-the-row-contract){ data-preview }.
 
 !!! tip "A good table has two readers"
     The feature author reads the table as product language. The test code reads

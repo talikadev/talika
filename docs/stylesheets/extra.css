@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Righteous&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Righteous&display=swap");
 
 [data-md-color-accent="talika-accent"] {
   --md-accent-fg-color: #cb0663;
   --md-accent-fg-color--transparent: rgba(203, 6, 99, 0.14);
   --md-accent-bg-color: #fff;
   --md-accent-bg-color--light: #ffffffb3;
-
   --talika-accent-gradient: linear-gradient(90deg, #cb0663, #f8a130);
   --talika-accent-gradient-soft: linear-gradient(
     90deg,
@@ -29,15 +28,13 @@
   -webkit-text-fill-color: transparent;
 }
 
-/*Headings*/
-
+/* Headings */
 .md-content .md-typeset :is(h1, h2, h3, h4, h5, h6) {
   font-family: "Righteous", var(--md-text-font), sans-serif;
   font-weight: 400;
   line-height: 1.15;
 }
 
-/* H1 */
 .md-content .md-typeset h1 {
   font-size: 2.25rem;
   font-weight: 400;
@@ -46,7 +43,6 @@
   margin-bottom: 1.1rem;
 }
 
-/* H2 */
 .md-content .md-typeset h2 {
   font-size: 1.75rem;
   font-weight: 400;
@@ -56,7 +52,6 @@
   margin-bottom: 0.8rem;
 }
 
-/* H3 */
 .md-content .md-typeset h3 {
   font-size: 1.35rem;
   font-weight: 400;
@@ -66,7 +61,6 @@
   margin-bottom: 0.65rem;
 }
 
-/* H4 */
 .md-content .md-typeset h4 {
   font-size: 1.12rem;
   font-weight: 400;
@@ -76,7 +70,6 @@
   margin-bottom: 0.5rem;
 }
 
-/* H5 */
 .md-content .md-typeset h5 {
   font-size: 0.98rem;
   font-weight: 400;
@@ -87,7 +80,6 @@
   text-transform: none;
 }
 
-/* H6 */
 .md-content .md-typeset h6 {
   font-size: 0.9rem;
   font-weight: 400;
@@ -98,10 +90,13 @@
   text-transform: uppercase;
 }
 
-/* ── Simple, stable low opacity grid ── */
+/* Simple, stable low-opacity grid. */
 :root {
-  /* Change this value (e.g., 0.05 for subtle, 0.20 for bold) to manually adjust how visible the grid is */
-  --grid-line-color: rgba(130, 130, 130, 0.05);
+  --grid-line-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-md-color-scheme="slate"] {
+  --grid-line-color: rgba(255, 255, 255, 0.05);
 }
 
 body {
@@ -114,227 +109,80 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-
   background-image:
     linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
-/* Let the page area show the body background */
+/* Let the page area show the body background. */
 .md-container,
 .md-main,
 .md-main__inner {
   background: transparent;
 }
 
-/* ── Footer Styling ── */
-/* Explicitly disable the default backgrounds and borders to make them invisible */
+/* Keep the footer visually integrated with the page. */
 .md-footer {
-    background-color: transparent;
-    border-top: none;
-    color: var(--md-default-fg-color);
+  background-color: transparent;
+  border-top: none;
+  color: var(--md-default-fg-color);
 }
 
 .md-footer-meta {
-    background-color: transparent;
+  background-color: transparent;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Righteous&display=swap');
-
-[data-md-color-accent="talika-accent"] {
-  --md-accent-fg-color: #cb0663;
-  --md-accent-fg-color--transparent: rgba(203, 6, 99, 0.14);
-  --md-accent-bg-color: #fff;
-  --md-accent-bg-color--light: #ffffffb3;
-
-  --talika-accent-gradient: linear-gradient(90deg, #cb0663, #f8a130);
-  --talika-accent-gradient-soft: linear-gradient(
-    90deg,
-    rgba(203, 6, 99, 0.12),
-    rgba(248, 161, 48, 0.12)
-  );
-}
-
-[data-md-color-accent="talika-accent"]
-.md-nav--primary .md-nav__item .md-nav__link--active {
-  background: var(--talika-accent-gradient-soft);
-  color: var(--md-accent-fg-color);
-}
-
-[data-md-color-accent="talika-accent"]
-.md-nav--primary .md-nav__item .md-nav__link--active .md-ellipsis {
-  background: var(--talika-accent-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-
-/*Headings*/
-
-.md-content .md-typeset :is(h1, h2, h3, h4, h5, h6) {
-  font-family: "Righteous", var(--md-text-font), sans-serif;
-  font-weight: 400;
-  line-height: 1.15;
-}
-
-/* H1 */
-.md-content .md-typeset h1 {
-  font-size: 2.25rem;
-  font-weight: 400;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-  margin-bottom: 1.1rem;
-}
-
-/* H2 */
-.md-content .md-typeset h2 {
-  font-size: 1.75rem;
-  font-weight: 400;
-  letter-spacing: -0.022em;
-  line-height: 1.12;
-  margin-top: 2.1rem;
-  margin-bottom: 0.8rem;
-}
-
-/* H3 */
-.md-content .md-typeset h3 {
-  font-size: 1.35rem;
-  font-weight: 400;
-  letter-spacing: -0.012em;
-  line-height: 1.16;
-  margin-top: 1.8rem;
-  margin-bottom: 0.65rem;
-}
-
-/* H4 */
-.md-content .md-typeset h4 {
-  font-size: 1.12rem;
-  font-weight: 400;
-  letter-spacing: -0.003em;
-  line-height: 1.22;
-  margin-top: 1.45rem;
-  margin-bottom: 0.5rem;
-}
-
-/* H5 */
-.md-content .md-typeset h5 {
-  font-size: 0.98rem;
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1.25;
-  margin-top: 1.3rem;
-  margin-bottom: 0.4rem;
-  text-transform: none;
-}
-
-/* H6 */
-.md-content .md-typeset h6 {
-  font-size: 0.9rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  line-height: 1.25;
-  margin-top: 1.15rem;
-  margin-bottom: 0.35rem;
-  text-transform: uppercase;
-}
-
-/* ── Simple, stable low opacity grid ── */
-:root {
-  /* Change this value (e.g., 0.05 for subtle, 0.20 for bold) to manually adjust how visible the grid is */
-  --grid-line-color: rgba(130, 130, 130, 0.08);
-}
-
-body {
-  position: relative;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-
-  background-image:
-    linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
-  background-size: 50px 50px;
-}
-
-/* Let the page area show the body background */
-.md-container,
-.md-main,
-.md-main__inner {
-  background: transparent;
-}
-
-/* ── Footer Styling ── */
-/* Explicitly disable the default backgrounds and borders to make them invisible */
-.md-footer {
-    background-color: transparent;
-    border-top: none;
-    color: var(--md-default-fg-color);
-}
-
-.md-footer-meta {
-    background-color: transparent;
-}
-
-/* ── Tabs Styling ── */
-/* Explicitly disable the default bottom shadow on tabs */
+/* Tabs */
 .md-tabs {
-    box-shadow: none;
+  box-shadow: none;
 }
 
-/* Make the active tab use the gradient color scheme */
 .md-tabs__item--active .md-tabs__link,
 .md-tabs__link--active {
-    color: inherit;
-    background-image: var(--talika-accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  color: inherit;
+  background-image: var(--talika-accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .md-tabs__item--active {
-    border-bottom: none;
-    font-weight: 1000;
+  border-bottom: none;
+  font-weight: 1000;
 }
 
-/* Match normal code blocks to the Talika terminal surface. */
+/* Match normal code blocks to the Talika terminal frame without replacing syntax colors. */
 .md-typeset .highlight:not(.talika-terminal) {
-    --md-code-bg-color: var(--talika-terminal-bg, hsla(var(--md-hue), 20%, 10%, 1));
-    background:
-        linear-gradient(135deg, rgba(203, 6, 99, 0.14), transparent 34%),
-        linear-gradient(160deg, rgba(248, 161, 48, 0.11), transparent 42%),
-        var(--md-code-bg-color);
-    border: 1px solid var(--talika-terminal-border, var(--md-default-fg-color--lightest));
-    border-radius: 7px;
-    margin: 0.85em 0 1em;
-    overflow: visible;
+  background:
+    linear-gradient(135deg, var(--talika-terminal-wash-accent), transparent 34%),
+    linear-gradient(160deg, var(--talika-terminal-wash-warm), transparent 42%),
+    var(--talika-code-bg, var(--md-code-bg-color));
+  border: 1px solid var(--talika-terminal-border, var(--md-default-fg-color--lightest));
+  border-radius: 7px;
+  color: var(--md-code-fg-color);
+  margin: 0.85em 0 1em;
+  overflow: visible;
 }
 
 .md-typeset .highlight:not(.talika-terminal) + .highlight:not(.talika-terminal) {
-    margin-top: 0.95em;
+  margin-top: 0.95em;
 }
 
 .md-typeset .highlight:not(.talika-terminal) > pre,
 .md-typeset .highlight:not(.talika-terminal) pre > code {
-    background: transparent;
+  background: transparent;
 }
 
 .md-typeset .highlight:not(.talika-terminal) > pre {
-    margin: 0;
-    margin-block: 0;
+  margin: 0;
+  margin-block: 0;
 }
 
 .md-typeset .highlight:not(.talika-terminal) > .filename {
-    background: var(--talika-terminal-bg-soft, var(--md-code-bg-color));
-    border-bottom: 1px solid var(--talika-terminal-border, var(--md-default-fg-color--lightest));
-    border-radius: 0;
-    color: var(--talika-terminal-muted, var(--md-default-fg-color--light));
-    margin: 0;
+  background: var(--talika-code-bg-soft, var(--md-code-bg-color));
+  border-bottom: 1px solid var(--talika-terminal-border, var(--md-default-fg-color--lightest));
+  border-radius: 0;
+  color: var(--talika-terminal-muted, var(--md-default-fg-color--light));
+  margin: 0;
 }
-
-

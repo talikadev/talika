@@ -1,6 +1,12 @@
 ---
 icon: lucide/table-properties
 title: Talika
+tags:
+  - Talika
+  - Overview
+  - BDD
+  - Data tables
+  - Python
 ---
 
 <style> .md-content .md-typeset h1 { display: none; } </style>

@@ -1,5 +1,10 @@
 ---
 icon: lucide/text-cursor-input
+tags:
+  - Cell parsing
+  - Type conversion
+  - Data tables
+  - Schemas
 ---
 
 # Cells Are Text First
@@ -52,6 +57,10 @@ This says:
 
 The important part is not the specific parser. The important part is that the
 meaning lives in one visible place.
+
+The parser guide covers the concrete building blocks, from
+[scalar parsers](../guides/basic/parser-factories.md#start-with-scalar-parsers){ data-preview }
+to [lists and parser composition](../guides/basic/parser-factories.md#build-lists-with-split-compose-and-each){ data-preview }.
 
 !!! tip "Start strict, loosen intentionally"
     A strict parser may feel fussy on day one, but it prevents quiet test bugs.

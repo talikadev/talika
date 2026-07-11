@@ -1,5 +1,10 @@
 ---
 icon: lucide/file-cog
+tags:
+  - Schemas
+  - Contracts
+  - Data tables
+  - Validation
 ---
 
 # Tables As Contracts
@@ -47,6 +52,9 @@ still works with `record.name`.
 
 If the authored labels no longer match the contract, the table should fail
 near the table, not later in the test setup.
+
+The fields guide turns this agreement into code, starting with how to
+[define a field contract](../guides/basic/fields.md#define-a-field-contract){ data-preview }.
 
 ```gherkin title="A label that needs a decision"
 --8<-- "docs_src/learn/table-contracts.py:bad-label"

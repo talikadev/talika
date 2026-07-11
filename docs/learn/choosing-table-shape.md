@@ -1,5 +1,10 @@
 ---
 icon: lucide/layout-panel-top
+tags:
+  - Row tables
+  - Column tables
+  - Table design
+  - Data modeling
 ---
 
 # Choosing A Table Shape
@@ -23,6 +28,8 @@ will compare many records at once.
 This shape feels like a spreadsheet. It is compact, familiar, and good for
 lists of users, roles, permissions, simple products, or short payments.
 
+See how that shape becomes a schema in [Define the Row Contract](../guides/basic/row-tables.md#define-the-row-contract){ data-preview }.
+
 !!! tip "Good row-table signal"
     If your eyes naturally move left to right across one record, then down to
     the next record, a row-shaped table is probably right.
@@ -39,6 +46,8 @@ of each item as a card.
 Here, `article-1` and `poll-1` are the records. Each row describes one field of
 those records. This is often easier for CMS content, configuration, page
 sections, or objects with many optional fields.
+
+See the corresponding implementation in [Define the Column Contract](../guides/basic/column-tables.md#define-the-column-contract){ data-preview }.
 
 ```python title="The matching idea in code"
 --8<-- "docs_src/learn/choosing-table-shape.py:column-contract"

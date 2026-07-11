@@ -1,5 +1,10 @@
 ---
 icon: lucide/braces
+tags:
+  - CellDSL
+  - Tokens
+  - Custom parsing
+  - Cell context
 ---
 
 # CellDSL Tokens

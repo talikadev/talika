@@ -1,5 +1,10 @@
 ---
 icon: lucide/ban
+tags:
+  - Variants
+  - Fields
+  - Validation
+  - Table schemas
 ---
 
 # Inapplicable Fields

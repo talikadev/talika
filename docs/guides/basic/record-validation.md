@@ -1,5 +1,10 @@
 ---
 icon: lucide/shield-check
+tags:
+  - Validation
+  - Records
+  - Parse context
+  - Diagnostics
 ---
 
 # Record Validation

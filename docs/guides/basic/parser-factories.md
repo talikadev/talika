@@ -1,5 +1,10 @@
 ---
 icon: lucide/square-function
+tags:
+  - Parser factories
+  - Type conversion
+  - Boolean parsing
+  - Collections
 ---
 
 # Parser Factories
