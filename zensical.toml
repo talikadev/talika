@@ -125,18 +125,20 @@ generator = false
 # icon = "fontawesome/brands/github"
 # link = "https://github.com/talikadev/talika"
 
-# [[project.theme.palette]]
-# media = "(prefers-color-scheme)"
-# toggle.icon = "lucide/sun-moon"
-# toggle.name = "Switch to light mode"
+[[project.theme.palette]]
+accent = "talika-accent"
+media = "(prefers-color-scheme)"
+primary = "amber"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
 
-# [[project.theme.palette]]
-# accent = "talika-accent"
-# media = "(prefers-color-scheme: light)"
-# primary = "amber"
-# scheme = "default"
-# toggle.icon = "lucide/sun"
-# toggle.name = "Switch to dark mode"
+[[project.theme.palette]]
+accent = "talika-accent"
+media = "(prefers-color-scheme: light)"
+primary = "amber"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
 
 [[project.theme.palette]]
 accent = "talika-accent"
@@ -144,7 +146,7 @@ media = "(prefers-color-scheme: dark)"
 primary = "amber"
 scheme = "slate"
 toggle.icon = "lucide/moon-star"
-# toggle.name = "Switch to system preference"
+toggle.name = "Switch to system preference"
 
 [project.theme.icon]
 repo = "material/github"

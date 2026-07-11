@@ -1,5 +1,10 @@
 ---
 icon: lucide/terminal
+tags:
+  - Static analysis
+  - Feature files
+  - CLI
+  - Validation
 ---
 
 # Static Checking

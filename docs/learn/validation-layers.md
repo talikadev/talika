@@ -1,5 +1,10 @@
 ---
 icon: lucide/layers
+tags:
+  - Validation
+  - Error handling
+  - References
+  - Diagnostics
 ---
 
 # Validation Layers
@@ -55,6 +60,10 @@ item that does not exist.
 ```text title="A reference problem"
 --8<-- "docs_src/learn/validation-layers.py:reference-error"
 ```
+
+The guides show these layers in practice: [record validation](../guides/basic/record-validation.md#add-a-record-validator){ data-preview },
+[whole-table validation](../guides/basic/table-validation.md#add-a-table-validator){ data-preview },
+and [reference resolution](../guides/advanced/references.md#resolve-one-reference){ data-preview }.
 
 !!! note "Layered errors are easier to fix"
     If the age is invalid, point to the age cell. If emails are duplicated,

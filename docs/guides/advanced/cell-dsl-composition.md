@@ -1,5 +1,10 @@
 ---
 icon: lucide/combine
+tags:
+  - CellDSL
+  - Parser composition
+  - Custom parsing
+  - Reusable parsers
 ---
 
 # CellDSL Composition

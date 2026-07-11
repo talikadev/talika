@@ -1,5 +1,10 @@
 ---
 icon: lucide/map-pin
+tags:
+  - Diagnostics
+  - Source metadata
+  - Error handling
+  - Validation
 ---
 
 # Source-Aware Diagnostics
@@ -41,6 +46,9 @@ During authoring, it is often better to report independent problems together:
 ```text title="Collected diagnostics"
 --8<-- "docs_src/learn/source-aware-diagnostics.py:collected"
 ```
+
+See how to [build an error from a source cell](../guides/advanced/source-model.md#build-errors-from-source-cells){ data-preview }
+and how to [inspect an aggregate of collected errors](../guides/advanced/collect-errors.md#inspect-the-aggregate){ data-preview }.
 
 This helps feature authors fix a table in one pass instead of chasing one
 failure per test run.

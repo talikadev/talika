@@ -1,5 +1,11 @@
 ---
 icon: lucide/rocket
+tags:
+  - Quickstart
+  - BDD
+  - Data tables
+  - Parsing
+  - Schemas
 ---
 
 # Quickstart

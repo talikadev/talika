@@ -1,5 +1,10 @@
 ---
 icon: lucide/file-json
+tags:
+  - Schemas
+  - Introspection
+  - Contracts
+  - Metadata
 ---
 
 # Schema Contracts

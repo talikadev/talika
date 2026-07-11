@@ -1,5 +1,10 @@
 ---
 icon: lucide/box
+tags:
+  - Records
+  - Output models
+  - Data boundary
+  - Test objects
 ---
 
 # From Records To Test Objects
@@ -52,6 +57,9 @@ access to Talika's source-aware record.
 Use `parse()` when the step wants the schema's normal output. Use
 `parse_records()` when you need the intermediate record: source metadata,
 `as_dict()`, or table-focused validation support.
+
+The output-model guide shows how to [add a dataclass output model](../guides/advanced/output-models.md#add-a-dataclass-output-model){ data-preview }
+and how to [choose the right return shape](../guides/advanced/output-models.md#choose-the-right-return-shape){ data-preview }.
 
 !!! note "The names are literal"
     `parse()` means "give me the public parsed result." `parse_records()` means

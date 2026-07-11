@@ -1,5 +1,10 @@
 ---
 icon: lucide/map-pin
+tags:
+  - Source metadata
+  - Diagnostics
+  - Table cells
+  - Records
 ---
 
 # Source Model

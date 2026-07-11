@@ -1,5 +1,10 @@
 ---
 icon: lucide/columns-3
+tags:
+  - Column tables
+  - Data tables
+  - Schemas
+  - Parsing
 ---
 
 # Column Tables

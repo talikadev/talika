@@ -1,5 +1,10 @@
 ---
 icon: lucide/workflow
+tags:
+  - Parsing lifecycle
+  - Validation
+  - Transformation
+  - Output models
 ---
 
 # The Table Lifecycle
@@ -48,6 +53,9 @@ Calling this "just parsing" misses the point. The hard part is not only turning
 one string into one value. The hard part is preserving author intent while the
 table moves through shape checks, transformations, validation, references, and
 output construction.
+
+The advanced guides show how to [preserve authored cells during transformation](../guides/advanced/transform-tables.md#preserve-the-authored-cell){ data-preview }
+and how [validation fits before output conversion](../guides/advanced/output-models.md#validation-runs-before-output-conversion){ data-preview }.
 
 !!! note "The source cell remains important"
     Even after a compact table expands into several logical records, the

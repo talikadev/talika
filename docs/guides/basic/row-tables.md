@@ -1,5 +1,11 @@
 ---
 icon: lucide/rows-3
+tags:
+  - Row tables
+  - Data tables
+  - Schemas
+  - Records
+  - Parsing
 ---
 
 # Row Tables

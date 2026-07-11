@@ -1,15 +1,35 @@
 :root {
-  --talika-terminal-bg: #171310;
-  --talika-terminal-bg-soft: #211a16;
-  --talika-terminal-border: rgba(108, 74, 46, 0.24);
-  --talika-terminal-fg: #f7efe7;
-  --talika-terminal-muted: rgba(247, 239, 231, 0.58);
-  --talika-terminal-output: rgba(247, 239, 231, 0.72);
-  --talika-terminal-command: #fffaf3;
-  --talika-terminal-prompt: #f8a130;
-  --talika-terminal-root: #ff78ab;
-  --talika-terminal-note: #ffd18a;
+  --talika-terminal-bg: var(--md-code-bg-color, #f5f5f5);
+  --talika-terminal-bg-soft: #e9ebec;
+  --talika-terminal-bg-soft: color-mix(
+    in srgb,
+    var(--md-code-bg-color, #f5f5f5) 94%,
+    var(--md-code-fg-color, #36464e) 6%
+  );
+  --talika-terminal-chrome-bg: #e5e7e8;
+  --talika-terminal-chrome-bg: color-mix(
+    in srgb,
+    var(--talika-terminal-bg-soft) 94%,
+    var(--md-code-fg-color, #36464e) 6%
+  );
+  --talika-terminal-border: rgba(54, 70, 78, 0.2);
+  --talika-terminal-fg: var(--md-code-fg-color, #36464e);
+  --talika-terminal-muted: #6c6c6c;
+  --talika-terminal-output: #5b666b;
+  --talika-terminal-command: var(--md-code-fg-color, #36464e);
+  --talika-terminal-prompt: #99500a;
+  --talika-terminal-root: #b00655;
+  --talika-terminal-note: #7b4c00;
   --talika-terminal-accent: #cb0663;
+  --talika-terminal-wash-accent: rgba(203, 6, 99, 0.05);
+  --talika-terminal-wash-warm: rgba(248, 161, 48, 0.07);
+  --talika-terminal-button-bg: rgba(54, 70, 78, 0.06);
+  --talika-terminal-button-border: rgba(54, 70, 78, 0.16);
+  --talika-terminal-button-bg-hover: rgba(153, 80, 10, 0.12);
+  --talika-terminal-button-border-hover: rgba(153, 80, 10, 0.34);
+  --talika-terminal-scrollbar: rgba(153, 80, 10, 0.4);
+  --talika-code-bg: var(--talika-terminal-bg);
+  --talika-code-bg-soft: var(--talika-terminal-bg-soft);
   --talika-terminal-font-size: 0.64rem;
   --talika-terminal-font-size-mobile: 0.61rem;
   --talika-terminal-line-height: 1.48;
@@ -19,12 +39,16 @@
   --talika-terminal-screen-padding-inline: 0.72rem;
   --talika-terminal-chrome-padding-block: 0.3rem;
   --talika-terminal-chrome-padding-inline: 0.52rem;
-  --talika-terminal-shadow: 0 12px 30px rgba(24, 14, 8, 0.16);
+  --talika-terminal-shadow: var(--md-shadow-z1, 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1));
 }
 
 [data-md-color-scheme="slate"] {
   --talika-terminal-bg: #100d11;
   --talika-terminal-bg-soft: #1b151d;
+  --talika-code-bg: var(--talika-terminal-bg);
+  --talika-code-bg-soft: var(--talika-terminal-bg-soft);
+  --talika-terminal-chrome-bg: #181219;
+  --talika-terminal-chrome-bg: color-mix(in srgb, var(--talika-terminal-bg-soft) 88%, black);
   --talika-terminal-border: rgba(255, 190, 118, 0.16);
   --talika-terminal-fg: #fff4ea;
   --talika-terminal-muted: rgba(255, 244, 234, 0.56);
@@ -33,6 +57,13 @@
   --talika-terminal-prompt: #ffb756;
   --talika-terminal-root: #ff6fa7;
   --talika-terminal-note: #ffd98e;
+  --talika-terminal-wash-accent: rgba(203, 6, 99, 0.14);
+  --talika-terminal-wash-warm: rgba(248, 161, 48, 0.11);
+  --talika-terminal-button-bg: rgba(255, 255, 255, 0.06);
+  --talika-terminal-button-border: rgba(255, 255, 255, 0.11);
+  --talika-terminal-button-bg-hover: rgba(248, 161, 48, 0.14);
+  --talika-terminal-button-border-hover: rgba(248, 161, 48, 0.38);
+  --talika-terminal-scrollbar: rgba(248, 161, 48, 0.45);
   --talika-terminal-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
 }
 
@@ -54,15 +85,14 @@
 
 .md-typeset .talika-terminal__player {
   background:
-    linear-gradient(135deg, rgba(203, 6, 99, 0.14), transparent 34%),
-    linear-gradient(160deg, rgba(248, 161, 48, 0.11), transparent 42%),
+    linear-gradient(135deg, var(--talika-terminal-wash-accent), transparent 34%),
+    linear-gradient(160deg, var(--talika-terminal-wash-warm), transparent 42%),
     var(--talika-terminal-bg);
 }
 
 .md-typeset .talika-terminal__chrome {
   align-items: center;
-  background: var(--talika-terminal-bg-soft);
-  background: color-mix(in srgb, var(--talika-terminal-bg-soft) 88%, black);
+  background: var(--talika-terminal-chrome-bg);
   border-bottom: 1px solid var(--talika-terminal-border);
   display: grid;
   gap: 0.5rem;
@@ -113,8 +143,8 @@
 
 .md-typeset .talika-terminal__button {
   appearance: none;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: var(--talika-terminal-button-bg);
+  border: 1px solid var(--talika-terminal-button-border);
   border-radius: 6px;
   color: var(--talika-terminal-muted);
   cursor: pointer;
@@ -128,8 +158,8 @@
 
 .md-typeset .talika-terminal__button:hover,
 .md-typeset .talika-terminal__button:focus-visible {
-  background: rgba(248, 161, 48, 0.14);
-  border-color: rgba(248, 161, 48, 0.38);
+  background: var(--talika-terminal-button-bg-hover);
+  border-color: var(--talika-terminal-button-border-hover);
   color: var(--talika-terminal-fg);
 }
 
@@ -155,7 +185,7 @@
   overflow-x: auto;
   padding: var(--talika-terminal-screen-padding-block) var(--talika-terminal-screen-padding-inline)
     calc(var(--talika-terminal-screen-padding-block) + 0.08rem);
-  scrollbar-color: rgba(248, 161, 48, 0.45) transparent;
+  scrollbar-color: var(--talika-terminal-scrollbar) transparent;
   scrollbar-width: thin;
 }
 
@@ -164,7 +194,7 @@
 }
 
 .md-typeset .talika-terminal__screen::-webkit-scrollbar-thumb {
-  background: rgba(248, 161, 48, 0.36);
+  background: var(--talika-terminal-scrollbar);
   border-radius: 999px;
 }
 

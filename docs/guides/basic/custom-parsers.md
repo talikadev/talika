@@ -1,5 +1,10 @@
 ---
 icon: lucide/wrench
+tags:
+  - Custom parsing
+  - Parser API
+  - Cell context
+  - Error handling
 ---
 
 # Custom Parsers

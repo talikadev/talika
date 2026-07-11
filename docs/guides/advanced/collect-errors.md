@@ -1,5 +1,10 @@
 ---
 icon: lucide/list-checks
+tags:
+  - Error handling
+  - Validation
+  - Diagnostics
+  - Collect mode
 ---
 
 # Collect Errors

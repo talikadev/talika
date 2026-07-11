@@ -1,5 +1,10 @@
 ---
 icon: lucide/regex
+tags:
+  - CellDSL
+  - Regular expressions
+  - Pattern matching
+  - Custom parsing
 ---
 
 # CellDSL Patterns

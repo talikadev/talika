@@ -1,5 +1,11 @@
 ---
 icon: lucide/sliders-horizontal
+tags:
+  - Fields
+  - Schemas
+  - Required fields
+  - Aliases
+  - Parsing
 ---
 
 # Fields

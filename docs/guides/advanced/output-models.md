@@ -1,5 +1,10 @@
 ---
 icon: lucide/box
+tags:
+  - Output models
+  - Dataclasses
+  - Pydantic
+  - Records
 ---
 
 # Output Models

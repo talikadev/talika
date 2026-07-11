@@ -1,5 +1,10 @@
 ---
 icon: lucide/git-branch
+tags:
+  - Variants
+  - Schemas
+  - Conditional fields
+  - Data tables
 ---
 
 # Variants

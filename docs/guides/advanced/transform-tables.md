@@ -1,5 +1,10 @@
 ---
 icon: lucide/wand-sparkles
+tags:
+  - Table transformers
+  - Data normalization
+  - Source metadata
+  - Parsing
 ---
 
 # Transform Tables

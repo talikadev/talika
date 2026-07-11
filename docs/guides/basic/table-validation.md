@@ -1,5 +1,10 @@
 ---
 icon: lucide/list-checks
+tags:
+  - Validation
+  - Data tables
+  - Parse context
+  - Table rules
 ---
 
 # Table Validation

@@ -1,5 +1,10 @@
 ---
 icon: lucide/split-square-horizontal
+tags:
+  - Data boundary
+  - Parsing
+  - Architecture
+  - BDD
 ---
 
 # The Table Boundary
@@ -56,6 +61,9 @@ An explicit boundary gives the project one place to answer:
 
 A table contract should not create accounts, call services, or perform the
 scenario action. It should prepare trustworthy input for that work.
+
+The [focused step-function pattern](../guides/basic/pytest-bdd.md#keep-step-functions-focused){ data-preview }
+shows where parsing ends and scenario setup begins in a real test.
 
 !!! warning "Keep actions outside the table layer"
     Parsing a table and acting on parsed data are different responsibilities.

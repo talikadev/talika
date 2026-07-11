@@ -1,5 +1,10 @@
 ---
 icon: lucide/languages
+tags:
+  - CellDSL
+  - Domain language
+  - Parsers
+  - Data tables
 ---
 
 # Table Vocabulary
@@ -48,6 +53,9 @@ Talika gives hooks for project vocabulary, but the project owns the words.
 
 That function is not merely a parser. It is a decision: in the `headline`
 field, the word `random` means "ask the test data generator for a headline."
+
+For implementation choices, compare a [custom compact-domain parser](../guides/basic/custom-parsers.md#parse-compact-domain-syntax){ data-preview }
+with [CellDSL tokens for stable vocabulary](../guides/advanced/cell-dsl-tokens.md#choose-tokens-for-stable-vocabulary){ data-preview }.
 
 !!! warning "Do not let magic words spread casually"
     Words like `random`, `today`, and `default` are powerful because they hide
