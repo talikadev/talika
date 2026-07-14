@@ -67,8 +67,8 @@ The same pattern scales to typed fields:
 - `age: int` lets Talika infer the integer parser from the annotation.
 - `roles = field("roles", parser=split(","))` turns one cell into a list.
 - `active = field("active", parser=boolean(), default=True)` accepts explicit
-  boolean words and supplies `True` only when the whole `active` column is
-  absent.
+  `true` and `false` values and supplies `True` only when the whole `active`
+  column is absent.
 
 !!! warning "Missing is different from empty"
     `default=True` is used when the column is not present in the table. An
@@ -106,8 +106,10 @@ The important part is not the pretty `repr`. It is the data boundary:
 
 !!! info "Why strict boolean parsing matters"
     Python's `bool("no")` is `True`, because every non-empty string is truthy.
-    Talika's `boolean()` parser does not use Python truthiness. It accepts known
-    tokens such as `yes`, `no`, `true`, and `false`, and rejects anything vague.
+    Talika's `boolean()` parser does not use Python truthiness. By default it
+    accepts only `true` and `false` (case-insensitively) and rejects anything
+    else. If `yes/no` is part of your domain language, declare it explicitly
+    with `true_values` and `false_values`.
 
 ## Defaults are for absent fields
 

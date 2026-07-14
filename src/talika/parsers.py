@@ -203,13 +203,62 @@ def decimal() -> Parser:
     return parse
 
 
+@dataclass(frozen=True, slots=True)
+class _BooleanParser:
+    accepted_true: frozenset[str]
+    accepted_false: frozenset[str]
+    case_sensitive: bool
+
+    @property
+    def description(self) -> str:
+        true_contract = tuple(sorted(self.accepted_true))
+        false_contract = tuple(sorted(self.accepted_false))
+        return (
+            f"boolean(true_values={true_contract!r}, "
+            f"false_values={false_contract!r}, "
+            f"case_sensitive={self.case_sensitive!r})"
+        )
+
+    def __call__(self, value: Any, context: CellContext) -> bool:
+        normalize = (lambda token: token) if self.case_sensitive else str.lower
+        normalized = normalize(str(value))
+        if normalized in self.accepted_true:
+            return True
+        if normalized in self.accepted_false:
+            return False
+        accepted = sorted(self.accepted_true | self.accepted_false)
+        raise ValueError(f"Expected one of {accepted!r}")
+
+
+def _configured_parser_description(value: Any) -> str | None:
+    if isinstance(value, _BooleanParser):
+        return value.description
+    return None
+
+
+def _boolean_tokens(
+    values: Iterable[str],
+    *,
+    option: str,
+    case_sensitive: bool,
+) -> frozenset[str]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Iterable):
+        raise TypeError(f"{option} must be a non-string iterable of strings")
+    tokens = tuple(values)
+    if any(not isinstance(value, str) for value in tokens):
+        raise TypeError(f"{option} must contain only strings")
+    if case_sensitive:
+        return frozenset(tokens)
+    return frozenset(value.lower() for value in tokens)
+
+
 def boolean(
     *,
-    true_values: Iterable[str] = ("true", "yes", "1", "on"),
-    false_values: Iterable[str] = ("false", "no", "0", "off"),
+    true_values: Iterable[str] = ("true",),
+    false_values: Iterable[str] = ("false",),
     case_sensitive: bool = False,
 ) -> Parser:
-    """Return a strict boolean parser with configurable accepted tokens.
+    """Return a boolean parser with an explicit accepted vocabulary.
 
     Args:
         true_values: Strings accepted as ``True``.
@@ -220,12 +269,24 @@ def boolean(
         A parser that returns ``bool``.
 
     Raises:
+        TypeError: If token collections or ``case_sensitive`` have invalid
+            types.
         ValueError: If the true and false token sets overlap.
+
+    !!! important "The default vocabulary is deliberately small"
+        Without configuration, the parser accepts only ``"true"`` and
+        ``"false"``. Matching is case-insensitive by default, so ``"TRUE"``
+        and ``"False"`` also work. Words such as ``"yes"`` and ``"on"`` and
+        numeric flags such as ``"1"`` must be declared by the schema.
 
     !!! warning
         Unknown values fail instead of falling back to Python truthiness. This
         prevents cells such as ``"False"`` or ``"nope"`` from accidentally
         becoming true.
+
+    !!! warning "Whitespace is not removed"
+        ``" true "`` is different from ``"true"``. Compose ``string(strip=True)``
+        before this parser when the authored format permits padding.
 
     !!! example
         ```python
@@ -236,40 +297,27 @@ def boolean(
         ```
 
     """
-    normalize = (lambda value: value) if case_sensitive else str.lower
-    accepted_true = {normalize(str(value)) for value in true_values}
-    accepted_false = {normalize(str(value)) for value in false_values}
+    if not isinstance(case_sensitive, bool):
+        raise TypeError("case_sensitive must be a boolean")
+    accepted_true = _boolean_tokens(
+        true_values,
+        option="true_values",
+        case_sensitive=case_sensitive,
+    )
+    accepted_false = _boolean_tokens(
+        false_values,
+        option="false_values",
+        case_sensitive=case_sensitive,
+    )
     overlap = accepted_true & accepted_false
     if overlap:
         raise ValueError(f"Boolean true and false values overlap: {sorted(overlap)!r}")
 
-    def parse(value: Any, context: CellContext) -> bool:
-        """Convert one token into a boolean.
-
-        Args:
-            value: Current logical cell value.
-            context: Source-aware parser context for the active field.
-
-        Returns:
-            ``True`` or ``False`` according to the configured token sets.
-
-        Raises:
-            ValueError: If the normalized token is not accepted.
-
-        !!! info
-            Error messages list the accepted normalized tokens so feature
-            authors can correct the table without reading schema code.
-
-        """
-        normalized = normalize(str(value))
-        if normalized in accepted_true:
-            return True
-        if normalized in accepted_false:
-            return False
-        accepted = sorted(accepted_true | accepted_false)
-        raise ValueError(f"Expected one of {accepted!r}")
-
-    return parse
+    return _BooleanParser(
+        accepted_true=accepted_true,
+        accepted_false=accepted_false,
+        case_sensitive=case_sensitive,
+    )
 
 
 def choice(*values: str, case_sensitive: bool = True) -> Parser:

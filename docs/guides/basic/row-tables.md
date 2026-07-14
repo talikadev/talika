@@ -45,9 +45,9 @@ The class says:
 - `email` must also appear and be non-empty.
 - `active` must appear, be non-empty, and parse through `boolean()`.
 
-Talika does not treat `true`, `false`, `yes`, or `no` as special because they
-look familiar to humans. The `boolean()` parser is the explicit rule that gives
-those words meaning.
+Talika does not infer Boolean meaning merely because a word looks familiar to
+humans. The default `boolean()` parser gives `true` and `false` meaning. Other
+vocabularies, such as `yes/no`, must be configured explicitly on that parser.
 
 !!! note "Labels and attributes"
     The value passed to `field("...")` is the label in the authored table. The

@@ -13,7 +13,11 @@ class UserTable(RowTable):
     name = field("name", required=True)
     age: int = field("age", required=True)
     role = field("role", parser=choice("admin", "editor", "viewer"))
-    active = field("active", parser=boolean(), default=True)
+    active = field(
+        "active",
+        parser=boolean(true_values=("yes",), false_values=("no",)),
+        default=True,
+    )
 # --8<-- [end:contract]
 
 # --8<-- [start:meaning]

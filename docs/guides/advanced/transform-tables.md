@@ -158,10 +158,10 @@ logical table before parsing. Good examples include:
 - applying test-run context before field parsing begins
 
 Avoid transformations for ordinary type conversion. A field parser is usually
-better for turning `"34"` into an integer, `"yes"` into a boolean, or a status
-label into a domain enum. Avoid transformations for business rules too. Record
-validators and table validators give clearer intent for rules such as duplicate
-emails, invalid ranges, or missing references.
+better for turning `"34"` into an integer, a configured token such as `"yes"`
+into a Boolean, or a status label into a domain enum. Avoid transformations for
+business rules too. Record validators and table validators give clearer intent
+for rules such as duplicate emails, invalid ranges, or missing references.
 
 !!! example "A useful boundary"
     If the question is "What table should my schema see?", use a table
