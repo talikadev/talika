@@ -128,10 +128,33 @@ runners, command-line tools, editor integrations, and custom reporting.
 is useful when a tool wants to compare against named values instead of spelling
 string literals throughout the codebase.
 
+Every `TableError` also exposes its immutable `diagnostic`. The aggregate's
+`diagnostics` property returns those values in the same order as `errors`.
+
 !!! tip "Render diagnostics from attributes"
     If you are building a checker, group or color errors by `code`, point to
     source using `row` and `column`, and show the human message as supporting
     text. Avoid scraping the formatted string.
+
+## Return Diagnostics Instead Of Raising
+
+Use `Schema.validate(...)` when the caller wants the same safe collection
+behavior as a result value instead of a `TableErrors` exception.
+
+```python
+result = UserImport.validate(bad_table)
+
+assert not result.valid
+assert result.records == ()
+for diagnostic in result.errors:
+    print(diagnostic.code, diagnostic.row, diagnostic.column)
+```
+
+`validate()` has no `error_mode`; it always collects what is safe within each
+lifecycle phase. It runs references and validators but skips output conversion.
+Records are returned only when the complete table is valid. See
+[Diagnostics And Validation Results](diagnostics.md) for the Model v1 fields,
+presence flags, and code catalog.
 
 ## Use the Same Entry Points
 

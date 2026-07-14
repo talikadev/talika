@@ -222,13 +222,21 @@ normalizes compact authored syntax before field parsing.
 
 ## Understand Parser Failures and Exception Wrapping
 
-When a custom parser raises any exception during the execution of `parse()`, Talika intercepts it. The parser lifecycle automatically wraps the exception as a `TableError` with the code set to `parser_failed`. 
+When a custom parser raises an ordinary exception during parsing, Talika wraps
+it as `TableError(code="parser_failed")` and retains the original exception as
+the diagnostic cause.
 
 Because of this auto-wrapping behavior:
 
-- **Raise Plain Exceptions**: You should raise standard Python exceptions like `ValueError`, `TypeError`, or custom domain-specific exceptions. Focus on writing a clear error message that describes the value problem.
-- **Avoid Raising TableError**: Avoid constructing and raising a `TableError` yourself within a field parser. Since Talika wraps any exception raised by the parser in a parser-failed `TableError` anyway, custom table coordinates or hints you supply in a manual `TableError` will be overridden by the wrapping layer.
-- **Automatic Diagnostics**: Talika automatically populates the location metadata (row, column, schema, field, and value) on the wrapped error.
+- **Raise Plain Exceptions** when Talika should classify the failure as
+  `parser_failed` and populate its normal schema, field, location, and values.
+- **Raise `TableError` deliberately** when the project owns a more specific
+  code, hint, or location. Talika passes that exact exception through unchanged.
+- **Raise `TableErrors` or `SchemaDefinitionError` deliberately** when the
+  extension owns an aggregate or schema-level failure; these also pass through.
+
+The same pass-through rule applies to default factories, transformers,
+reference-key parsers, validators, and output builders.
 
 ```python title="A parser with the wrong signature"
 --8<-- "docs_src/guides/basic/custom-parsers.py:bad-signature"

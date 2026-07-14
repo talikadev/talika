@@ -215,7 +215,7 @@ def test_late_variant_reference_targets_are_validated_when_parsing_begins():
         kind = discriminator_field("Kind")
         parent = reference("Parent", target="slug")
 
-    with pytest.raises(TableError, match="is not declared"):
+    with pytest.raises(SchemaDefinitionError, match="is not declared"):
         VariantReferences.parse([["IDs", "1"], ["Kind", "article"], ["Parent", ""]])
 
 
@@ -233,7 +233,7 @@ def test_variant_reference_targets_require_the_same_parser_object():
     class Poll(VariantReferences):
         slug = field("Slug", parser=lambda value, context: value.lower())
 
-    with pytest.raises(TableError, match="ambiguous parsers") as captured:
+    with pytest.raises(SchemaDefinitionError, match="ambiguous parsers") as captured:
         VariantReferences.parse(
             [
                 ["IDs", "1", "2"],
@@ -243,7 +243,7 @@ def test_variant_reference_targets_require_the_same_parser_object():
             ]
         )
 
-    assert "common base" in captured.value.hint
+    assert "common base" in captured.value.message
 
 
 def test_variant_reference_target_can_be_exposed_by_one_selected_variant():

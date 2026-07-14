@@ -125,6 +125,16 @@ domain code.
     If the discriminator has a parser, variant keys must match the parsed
     values, not the raw table text.
 
+!!! warning "Register variants before parsing"
+    Explicit `@Table.variant(...)` decorators should run while the schema
+    module is imported. The first successful schema-family finalization by
+    `parse()`, `parse_records()`, or `validate()` seals the registry. Registering another
+    variant after that raises `SchemaDefinitionError`. `describe()` and
+    `variant_for()` inspect the current registry without sealing it.
+
+    `__variants__` is a read-only compatibility view. Always use the decorator
+    rather than mutating that mapping directly.
+
 ## Unknown Variants Point to the Discriminator
 
 When the discriminator value is not registered, Talika points at the cell that

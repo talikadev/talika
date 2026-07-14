@@ -1,15 +1,19 @@
 """Static-typing smoke sample for the documented public API."""
 
 from talika import (
+    Diagnostic,
+    DiagnosticSeverity,
     RowTable,
     TableContract,
     TableError,
     TableErrorCode,
     TableErrors,
+    ValidationResult,
     __version__,
     field,
     parse_table,
     parse_table_records,
+    validate_table,
 )
 
 
@@ -29,6 +33,21 @@ functional_records: list[UserTable] = parse_table_records(
     UserTable,
     [["name", "age"], ["Alice", "30"]],
 )
+validation: ValidationResult[UserTable] = UserTable.validate(
+    [["name", "age"], ["Alice", "30"]]
+)
+functional_validation: ValidationResult[UserTable] = validate_table(
+    UserTable,
+    [["name", "age"], ["Alice", "30"]],
+)
+diagnostic = Diagnostic(
+    code="example",
+    message="Example diagnostic",
+    severity=DiagnosticSeverity.WARNING,
+    source_value=None,
+)
+diagnostic_data: dict[str, object] = diagnostic.as_dict()
+has_source_value: bool = diagnostic.has_source_value
 version_text: str = __version__
 name: str = records[0].name
 functional_name: str = functional_records[0].name

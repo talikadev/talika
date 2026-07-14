@@ -5,6 +5,7 @@ import pytest
 from talika import (
     ColumnTable,
     RowTable,
+    SchemaDefinitionError,
     TableError,
     TableFields,
     discriminator,
@@ -369,7 +370,7 @@ def test_registering_variants_requires_one_discriminator_field():
     class ArticleContent(ContentTable):
         pass
 
-    with pytest.raises(TableError, match="exactly one discriminator_field"):
+    with pytest.raises(SchemaDefinitionError, match="exactly one discriminator_field"):
         ContentTable.parse([["type"], ["Article"]])
 
 

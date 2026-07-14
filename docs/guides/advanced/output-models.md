@@ -182,6 +182,11 @@ performs the small translation needed by the test setup.
 If output construction raises an exception, Talika wraps it in a source-aware
 `TableError` with `code=output_failed`.
 
+A custom output model or builder may raise a deliberate `TableError`,
+`TableErrors`, or `SchemaDefinitionError`; Talika preserves that exception
+instead of reclassifying it. `validate()`, `parse_records()`, and static
+checking never call output conversion.
+
 ```python title="An output model that rejects one record"
 --8<-- "docs_src/guides/advanced/output-models.py:output-error"
 ```

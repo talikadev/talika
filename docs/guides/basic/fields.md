@@ -58,6 +58,40 @@ and `can_publish`.
     means, every test that parses through that schema gets the same conversion
     and validation.
 
+### Compiled fields are read-only
+
+Talika compiles a schema when its class is created. After that, field labels,
+aliases, parsers, defaults, and policies cannot be reassigned. This prevents a
+schema from changing meaning between two parses.
+
+To specialize a contract, declare a subclass and replace the field there:
+
+```python
+class BaseUsers(RowTable):
+    name = field("name")
+
+class ImportedUsers(BaseUsers):
+    name = field("Full name")
+```
+
+The parent remains unchanged and each class receives its own compiled schema.
+Assigning a new label or parser directly to `BaseUsers.name` after class
+creation raises `AttributeError`.
+
+### Inheritance conflicts fail early
+
+Inherited fields keep their order, and an explicit field on a child replaces
+the inherited field in that position. Diamond inheritance deduplicates the
+same original declaration. Independent components that use the same Python
+attribute name are ambiguous and must be resolved by redeclaring that field on
+the concrete schema.
+
+A normal attribute cannot silently replace an inherited field. Field names
+also cannot replace parser lifecycle methods such as `parse`, `validate`,
+`build_output`, or `validate_record`, or record APIs such as `table_source`
+and `as_dict`.
+These mistakes raise `SchemaDefinitionError` while the schema is being built.
+
 ## Parse Field Values
 
 When Talika parses a table, each field becomes an attribute on the parsed

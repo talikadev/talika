@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from enum import Enum
 from typing import Any
 
+from .diagnostics import Diagnostic, DiagnosticSeverity, stable_text_value
 from .table import TableCell
 
 _UNSET = object()
@@ -57,6 +58,7 @@ class TableErrorCode(str, Enum):
     RECORD_VALIDATION_FAILED = "record_validation_failed"
     TABLE_VALIDATION_FAILED = "table_validation_failed"
     OUTPUT_FAILED = "output_failed"
+    INTERNAL_ERROR = "internal_error"
 
 
 class TableError(ValueError):
@@ -69,11 +71,14 @@ class TableError(ValueError):
     Attributes:
         message: Human-readable failure summary.
         schema: Schema display name when known.
-        field: Schema attribute name associated with the failure.
+        field: Legacy human-facing field label associated with the failure.
+        field_name: Python attribute name associated with the failure.
+        field_label: Authored field label associated with the failure.
+        source_uri: URI of the source document when known.
         row: One-based source row.
         column: One-based source column.
         item_id: Parsed item ID when the failing record has one.
-        value: Offending source value, or an internal unset sentinel.
+        value: Legacy alias for the offending source value.
         code: Stable machine-readable diagnostic code.
         hint: Optional remediation text.
 
@@ -90,46 +95,92 @@ class TableError(ValueError):
         *,
         schema: type | str | None = None,
         field: str | None = None,
+        field_name: str | None = None,
+        field_label: str | None = None,
+        source_uri: str | None = None,
         row: int | None = None,
         column: int | None = None,
-        item_id: Any | None = None,
+        item_id: Any = _UNSET,
         value: Any = _UNSET,
+        source_value: Any = _UNSET,
+        logical_value: Any = _UNSET,
         code: TableErrorCode | str = TableErrorCode.TABLE_ERROR,
         hint: str | None = None,
+        severity: DiagnosticSeverity | str = DiagnosticSeverity.ERROR,
+        cause: BaseException | None = None,
     ) -> None:
         """Initialize one structured table diagnostic.
 
         Args:
             message: Human-readable failure summary.
             schema: Schema class or display name associated with the failure.
-            field: Schema attribute name associated with the failure.
+            field: Legacy human-facing field label.
+            field_name: Python attribute name for the declared field.
+            field_label: Authored canonical or alias label for the field.
+            source_uri: URI of the source document when known.
             row: One-based source row.
             column: One-based source column.
             item_id: Parsed item identifier when available.
             value: Offending source value. Omit to represent "no value".
+            source_value: Original authored value, superseding ``value``.
+            logical_value: Current value after table transformation.
             code: Stable diagnostic category.
             hint: Optional user-facing remediation.
+            severity: Diagnostic severity.
+            cause: Original exception when this error wraps another failure.
 
         !!! warning
             Passing ``value=None`` means the offending value is explicitly
             ``None``. Omit ``value`` entirely when no value should be reported.
 
         """
-        self.message = message
         if isinstance(schema, type):
-            self.schema = schema.__dict__.get(
+            schema_name = schema.__dict__.get(
                 "__schema_display_name__", schema.__name__
             )
         else:
-            self.schema = schema
-        self.field = field
-        self.row = row
-        self.column = column
-        self.item_id = item_id
-        self.value = value
-        self.code = code.value if isinstance(code, TableErrorCode) else str(code)
-        self.hint = hint
+            schema_name = schema
+        if field_label is None:
+            field_label = field
+        if source_value is _UNSET and value is not _UNSET:
+            source_value = value
+
+        diagnostic_kwargs: dict[str, Any] = {
+            "code": code.value if isinstance(code, TableErrorCode) else str(code),
+            "message": message,
+            "severity": severity,
+            "hint": hint,
+            "schema_name": schema_name,
+            "field_name": field_name,
+            "field_label": field_label,
+            "source_uri": source_uri,
+            "row": row,
+            "column": column,
+            "cause": cause,
+        }
+        # ``TableError`` historically used ``None`` as its omitted item ID.
+        # Preserve that compatibility while ``Diagnostic`` itself can still
+        # represent an explicit ``None`` through its sentinel-aware API.
+        if item_id is not _UNSET and item_id is not None:
+            diagnostic_kwargs["item_id"] = item_id
+        if source_value is not _UNSET:
+            diagnostic_kwargs["source_value"] = source_value
+        if logical_value is not _UNSET:
+            diagnostic_kwargs["logical_value"] = logical_value
+        self.diagnostic = Diagnostic(**diagnostic_kwargs)
         super().__init__(self.__str__())
+        if cause is not None:
+            self.__cause__ = cause
+
+    @classmethod
+    def from_diagnostic(cls, diagnostic: Diagnostic) -> TableError:
+        """Create a compatibility exception around an existing diagnostic."""
+        error = cls.__new__(cls)
+        error.diagnostic = diagnostic
+        ValueError.__init__(error, error.__str__())
+        if diagnostic.cause is not None:
+            error.__cause__ = diagnostic.cause
+        return error
 
     @classmethod
     def from_cell(
@@ -139,9 +190,14 @@ class TableError(ValueError):
         *,
         schema: type | str | None = None,
         field: str | None = None,
-        item_id: Any | None = None,
+        field_name: str | None = None,
+        field_label: str | None = None,
+        source_uri: str | None = None,
+        item_id: Any = _UNSET,
         code: TableErrorCode | str = TableErrorCode.TABLE_ERROR,
         hint: str | None = None,
+        severity: DiagnosticSeverity | str = DiagnosticSeverity.ERROR,
+        cause: BaseException | None = None,
     ) -> TableError:
         """Create an error located at a cell's original source.
 
@@ -152,10 +208,15 @@ class TableError(ValueError):
             message: Human-readable failure summary.
             cell: Source-aware cell that caused the error.
             schema: Schema class or display name associated with the failure.
-            field: Schema attribute name associated with the failure.
+            field: Legacy human-facing field label.
+            field_name: Python attribute name for the declared field.
+            field_label: Authored canonical or alias label for the field.
+            source_uri: Source document URI, overriding the cell URI.
             item_id: Parsed item identifier when available.
             code: Stable diagnostic category.
             hint: Optional user-facing remediation.
+            severity: Diagnostic severity.
+            cause: Original exception when this error wraps another failure.
 
         Returns:
             A ``TableError`` populated from ``cell`` source coordinates.
@@ -174,13 +235,99 @@ class TableError(ValueError):
             message,
             schema=schema,
             field=field,
+            field_name=field_name,
+            field_label=field_label,
+            source_uri=source_uri or cell.source_uri,
             row=cell.source_row,
             column=cell.source_column,
             item_id=item_id,
-            value=cell.source_value,
+            source_value=cell.source_value,
+            logical_value=cell.value,
             code=code,
             hint=hint,
+            severity=severity,
+            cause=cause,
         )
+
+    @property
+    def message(self) -> str:
+        """Return the human-readable failure message."""
+        return self.diagnostic.message
+
+    @property
+    def schema(self) -> str | None:
+        """Return the schema display name when known."""
+        return self.diagnostic.schema_name
+
+    @property
+    def field(self) -> str | None:
+        """Return the legacy human-facing field identifier."""
+        return self.diagnostic.field_label or self.diagnostic.field_name
+
+    @property
+    def field_name(self) -> str | None:
+        """Return the declared Python field name when known."""
+        return self.diagnostic.field_name
+
+    @property
+    def field_label(self) -> str | None:
+        """Return the authored field label when known."""
+        return self.diagnostic.field_label
+
+    @property
+    def source_uri(self) -> str | None:
+        """Return the source document URI when known."""
+        return self.diagnostic.source_uri
+
+    @property
+    def row(self) -> int | None:
+        """Return the one-based source row when known."""
+        return self.diagnostic.row
+
+    @property
+    def column(self) -> int | None:
+        """Return the one-based source column when known."""
+        return self.diagnostic.column
+
+    @property
+    def item_id(self) -> Any | None:
+        """Return the parsed item identifier when present."""
+        return self.diagnostic.item_id
+
+    @property
+    def has_item_id(self) -> bool:
+        """Return whether an item identifier is present."""
+        return self.diagnostic.has_item_id
+
+    @property
+    def value(self) -> Any | None:
+        """Return the legacy alias for the original source value."""
+        return self.diagnostic.source_value
+
+    @property
+    def source_value(self) -> Any | None:
+        """Return the original authored value when present."""
+        return self.diagnostic.source_value
+
+    @property
+    def logical_value(self) -> Any | None:
+        """Return the current transformed value when present."""
+        return self.diagnostic.logical_value
+
+    @property
+    def code(self) -> str:
+        """Return the stable machine-readable diagnostic code."""
+        return self.diagnostic.code
+
+    @property
+    def hint(self) -> str | None:
+        """Return optional remediation text."""
+        return self.diagnostic.hint
+
+    @property
+    def severity(self) -> DiagnosticSeverity:
+        """Return the diagnostic severity."""
+        return self.diagnostic.severity
 
     def __str__(self) -> str:
         """Return a compact message with structured context appended.
@@ -205,9 +352,13 @@ class TableError(ValueError):
         if self.column is not None:
             details.append(f"column={self.column}")
         if self.item_id is not None:
-            details.append(f"item_id={self.item_id!r}")
-        if self.value is not _UNSET:
-            details.append(f"value={self.value!r}")
+            details.append(f"item_id={stable_text_value(self.item_id)}")
+        if self.diagnostic.has_source_value:
+            details.append(f"value={stable_text_value(self.value)}")
+        if self.logical_value != self.value and self.diagnostic.has_logical_value:
+            details.append(f"logical_value={stable_text_value(self.logical_value)}")
+        if self.source_uri is not None:
+            details.append(f"source={self.source_uri}")
         location = f" ({', '.join(details)})" if details else ""
         hint = f". Hint: {self.hint}" if self.hint else ""
         return f"{self.message}{location}{hint}"
@@ -223,7 +374,7 @@ class TableError(ValueError):
             This distinguishes an omitted value from an explicit ``None``.
 
         """
-        return self.value is not _UNSET
+        return self.diagnostic.has_source_value
 
 
 class TableErrors(ValueError):
@@ -261,6 +412,11 @@ class TableErrors(ValueError):
             raise ValueError("TableErrors requires at least one error")
         self.errors = tuple(errors)
         super().__init__(self.__str__())
+
+    @property
+    def diagnostics(self) -> tuple[Diagnostic, ...]:
+        """Return underlying immutable diagnostics in discovery order."""
+        return tuple(error.diagnostic for error in self.errors)
 
     def __iter__(self) -> Iterator[TableError]:
         """Iterate over diagnostics in discovery order.
@@ -306,15 +462,16 @@ class TableErrors(ValueError):
 
 
 class SchemaDefinitionError(ValueError):
-    """Report an invalid schema declaration at class creation time.
+    """Report an invalid schema declaration before table input is parsed.
 
     Attributes:
         message: Human-readable declaration problem.
         schema: Name of the schema being created when available.
 
     !!! warning
-        These errors indicate Python schema code is ambiguous, not that a
-        feature file table contains invalid data.
+        These errors normally occur during class creation. Explicit variant
+        families may be completed by decorators, so their family-wide checks
+        run when the family is described or first finalized for parsing.
 
     """
 
@@ -332,5 +489,10 @@ class SchemaDefinitionError(ValueError):
         """
         self.message = message
         self.schema = schema
+        self.diagnostic = Diagnostic(
+            code=TableErrorCode.SCHEMA_DEFINITION.value,
+            message=message,
+            schema_name=schema,
+        )
         detail = f" (schema={schema})" if schema else ""
         super().__init__(f"{message}{detail}")

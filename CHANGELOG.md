@@ -4,6 +4,92 @@ All notable changes to this project are documented here. Until the first
 stable release, additions may refine APIs while preserving the documented
 `0.1` behavior whenever practical.
 
+## 0.3.0
+
+Talika 0.3 compiles schema declarations into one immutable plan and moves
+parsing stages behind a small public schema façade. It also introduces one
+Diagnostic Model shared by runtime parsing, non-raising validation, static
+checking, pytest-bdd, and the CLI without adding a new table language or
+output feature.
+
+### Breaking architecture corrections
+
+- Freeze compiled field metadata, policies, lifecycle hooks, and schema
+  registries; customize an existing schema through a subclass instead of
+  mutating it after class creation.
+- Make `__fields__` and `__variants__` read-only compatibility mappings and
+  seal explicit variant registration after the schema family is first
+  successfully finalized for parsing.
+- Reject reserved field names, non-field shadowing, ambiguous inherited field
+  names, and reuse of an already-bound field declaration.
+- Report variant-family and reference-contract configuration failures as
+  `SchemaDefinitionError` before table input is processed.
+
+### Breaking diagnostic corrections
+
+- Reserve `validate` as a framework schema name and reject fields with that
+  Python attribute name during schema compilation.
+- Preserve deliberate `TableError`, `TableErrors`, and
+  `SchemaDefinitionError` instances raised by parsers, factories,
+  transformers, reference-key parsers, validators, and output hooks instead
+  of re-wrapping them.
+- Allow formatted error strings to include source URI and explicit field/value
+  information; integrations should consume structured diagnostic attributes.
+- Make invalid non-raising validation results expose no partial records, and
+  keep validation/checker paths independent from output conversion.
+
+### Diagnostic Model v1 and validation APIs
+
+- Add top-level `Diagnostic`, `DiagnosticSeverity`, `ValidationResult`, and
+  `validate_table` exports plus `Schema.validate(...)` and
+  `talika.validate(...)` fixture methods.
+- Add immutable, presence-aware diagnostic values with source/logical values,
+  field name and label, severity, deterministic `as_dict()`, and programmatic
+  exception causes.
+- Adapt `TableError`, `TableErrors`, `SchemaDefinitionError`, and
+  `FeatureDiagnostic` to expose the shared model while preserving legacy
+  attributes and raising APIs.
+- Add the warning channel without reclassifying any existing behavior, and add
+  `internal_error` for unexpected Talika lifecycle failures.
+
+### Source and pytest-bdd improvements
+
+- Add optional source URIs to tables, cells, parser/default contexts, record
+  sources, and diagnostics; normalize filesystem paths to absolute file URIs.
+- Preserve original authored and current logical cell values through
+  transformations and carry source URIs through built-in transformers and
+  transformer pipelines.
+- Bind pytest-bdd feature paths and absolute cell coordinates to the exact
+  datatable parsed through the instance-local `talika` fixture, including
+  automatic cleanup after successful and failed steps.
+
+### Checker and JSON compatibility
+
+- Move static checking to `Schema.validate()`, include errors and warnings in
+  discovery order, and continue skipping output construction.
+- Version CLI JSON as `format_version=1`, add error/warning counts and every
+  Diagnostic Model v1 field, and preserve legacy `path`, `schema`, `field`, and
+  `value` aliases.
+- Encode project values deterministically without arbitrary `repr()` fallback,
+  preserve diagnostic-bearing schema/internal failures, and retain existing
+  exit codes.
+
+### Architecture and maintenance
+
+- Add a private immutable `SchemaPlan` with normalized field, orientation,
+  policy, hook, variant, and reference metadata.
+- Split schema compilation, row and column traversal, reference resolution,
+  validation, output conversion, and introspection away from the public
+  `schema.py` façade.
+- Replace runtime schema/MRO inspection with compiled plan indexes while
+  retaining diagnostic order, source coordinates, and exception causes.
+- Keep parsed record values mutable while preserving immutable record source
+  metadata and extras.
+- Assign explicit documented codes to Talika-owned table, transformation,
+  identity, reference, validation, output, checker, and internal failures.
+- Centralize lifecycle outcomes so raising parsing, collection, validation,
+  checking, and CLI rendering consume the same diagnostics in the same order.
+
 ## 0.2.0
 
 Talika 0.2.0 is a stabilization release. It tightens existing parsing,

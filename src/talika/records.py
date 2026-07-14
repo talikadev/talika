@@ -33,7 +33,7 @@ class TableRecord:
 
     """
 
-    __fields__: ClassVar[dict[str, Field]] = {}
+    __fields__: ClassVar[Mapping[str, Field]] = MappingProxyType({})
     _table_source: RecordSource
     _table_extras: Mapping[str, Any]
 

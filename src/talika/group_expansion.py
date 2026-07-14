@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .context import ParseContext
-from .errors import TableError, TableErrorCode
+from .errors import SchemaDefinitionError, TableError, TableErrorCode, TableErrors
 from .table import TableCell, TableData
 
 _MAX_NUMERIC_RANGE_KEYS = 10_000
@@ -469,7 +469,12 @@ class ColumnGroupExpander:
 
         """
         if not table.rows or not table.rows[0]:
-            raise TableError("Grouped table is empty", schema=schema)
+            raise TableError(
+                "Grouped table is empty",
+                schema=schema,
+                source_uri=table.source_uri,
+                code=TableErrorCode.TABLE_EMPTY,
+            )
 
         source_width = len(table.rows[0])
         for row_number, row in enumerate(table.rows, start=1):
@@ -480,11 +485,14 @@ class ColumnGroupExpander:
                     "Column group expansion requires a rectangular table",
                     row[0],
                     schema=schema,
+                    code=TableErrorCode.RAGGED_ROW,
                 )
             raise TableError(
                 "Column group expansion requires a rectangular table",
                 schema=schema,
                 row=row_number,
+                source_uri=table.source_uri,
+                code=TableErrorCode.RAGGED_ROW,
             )
 
         key_label = table.rows[0][0]
@@ -493,6 +501,7 @@ class ColumnGroupExpander:
                 f"Expected key row {self.key_row!r}",
                 key_label,
                 schema=schema,
+                code=TableErrorCode.INVALID_TRANSFORM,
             )
 
         expanded_rows: list[list[TableCell]] = [[row[0]] for row in table.rows]
@@ -504,6 +513,7 @@ class ColumnGroupExpander:
                     "Range rule produced no keys",
                     key_cell,
                     schema=schema,
+                    code=TableErrorCode.INVALID_TRANSFORM,
                 )
             expanded_rows[0].extend(key_cells)
 
@@ -521,10 +531,11 @@ class ColumnGroupExpander:
                         f"a group of {len(key_cells)} keys",
                         value_cell,
                         schema=schema,
+                        code=TableErrorCode.INVALID_TRANSFORM,
                     )
                 expanded_rows[row_index].extend(value_cells)
 
-        return TableData.from_cells(expanded_rows)
+        return TableData.from_cells(expanded_rows, source=table.source_uri)
 
     def _expand_range(
         self,
@@ -553,7 +564,7 @@ class ColumnGroupExpander:
         """
         try:
             cells = list(self.range_rule.expand(cell, context))
-        except TableError:
+        except (TableError, TableErrors, SchemaDefinitionError):
             raise
         except _ExpansionLimitError as exc:
             raise TableError.from_cell(
@@ -567,6 +578,8 @@ class ColumnGroupExpander:
                 f"Range expansion failed: {exc}",
                 cell,
                 schema=schema,
+                code=TableErrorCode.TRANSFORM_FAILED,
+                cause=exc,
             ) from exc
         self._require_cells(cells, cell, "Range", schema)
         return cells
@@ -601,13 +614,15 @@ class ColumnGroupExpander:
         """
         try:
             cells = list(self.repeat_rule.expand(cell, expected_count, context))
-        except TableError:
+        except (TableError, TableErrors, SchemaDefinitionError):
             raise
         except Exception as exc:
             raise TableError.from_cell(
                 f"Repeat expansion failed: {exc}",
                 cell,
                 schema=schema,
+                code=TableErrorCode.TRANSFORM_FAILED,
+                cause=exc,
             ) from exc
         self._require_cells(cells, cell, "Repeat", schema)
         return cells
@@ -641,4 +656,5 @@ class ColumnGroupExpander:
             f"{rule_name} rule must return TableCell values",
             source,
             schema=schema,
+            code=TableErrorCode.INVALID_TRANSFORM,
         )

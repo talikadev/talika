@@ -193,19 +193,42 @@ def test_key_row_and_rectangular_shape_are_validated():
         repeat_rule=PrefixRepeat(":"),
     )
 
-    with pytest.raises(TableError, match="Expected key row"):
+    with pytest.raises(TableError, match="Expected key row") as invalid_key:
         expander.transform(
             TableData.from_rows([["Keys", "1"]]),
             ParseContext(),
             schema="ContentTable",
         )
 
-    with pytest.raises(TableError, match="rectangular"):
+    assert invalid_key.value.code == "invalid_transform"
+
+    with pytest.raises(TableError, match="rectangular") as ragged:
         expander.transform(
             TableData.from_rows([["IDs", "1"], ["Type"]]),
             ParseContext(),
             schema="ContentTable",
         )
+
+    assert ragged.value.code == "ragged_row"
+
+
+def test_group_expansion_uses_specific_empty_and_rule_failure_codes():
+    expander = ColumnGroupExpander(
+        key_row="IDs",
+        range_rule=NumericRange(".."),
+        repeat_rule=PrefixRepeat(":"),
+    )
+
+    with pytest.raises(TableError) as empty:
+        expander.transform(TableData.from_cells(()), ParseContext())
+    assert empty.value.code == "table_empty"
+
+    with pytest.raises(TableError) as failed:
+        expander.transform(
+            TableData.from_rows([["IDs", "not..numeric"]]),
+            ParseContext(),
+        )
+    assert failed.value.code == "transform_failed"
 
 
 def test_custom_rules_receive_context_and_can_define_new_syntax():
@@ -249,7 +272,7 @@ def test_custom_rules_must_return_cells_and_correct_counts():
         def expand(self, cell, expected_count, context):
             return [cell]
 
-    with pytest.raises(TableError, match="must return TableCell"):
+    with pytest.raises(TableError, match="must return TableCell") as bad_range:
         ColumnGroupExpander(
             key_row="Keys",
             range_rule=BadRange(),
@@ -259,7 +282,9 @@ def test_custom_rules_must_return_cells_and_correct_counts():
             ParseContext(),
         )
 
-    with pytest.raises(TableError, match="produced 1 values"):
+    assert bad_range.value.code == "invalid_transform"
+
+    with pytest.raises(TableError, match="produced 1 values") as short_repeat:
         ColumnGroupExpander(
             key_row="Keys",
             range_rule=NumericRange(".."),
@@ -268,6 +293,8 @@ def test_custom_rules_must_return_cells_and_correct_counts():
             TableData.from_rows([["Keys", "1..2"], ["Value", "item"]]),
             ParseContext(),
         )
+
+    assert short_repeat.value.code == "invalid_transform"
 
 
 def test_numeric_range_allows_ten_thousand_keys():

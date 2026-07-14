@@ -83,6 +83,9 @@ jobs:
         run: |
           python -m venv wheel-smoke
           wheel-smoke/bin/python -m pip install dist/*.whl
-          wheel-smoke/bin/python -c "from talika import RowTable, field; T = type('SmokeTable', (RowTable,), {'value': field('value')}); assert T.parse([['value'], ['ok']])[0].value == 'ok'"
+          wheel-smoke/bin/python -c "from talika import Diagnostic, DiagnosticSeverity, RowTable, ValidationResult, field, validate_table; T = type('SmokeTable', (RowTable,), {'value': field('value', required=True)}); assert T.parse([['value'], ['ok']])[0].value == 'ok'; valid = validate_table(T, [['value'], ['ok']]); invalid = T.validate([['value'], ['']]); assert isinstance(valid, ValidationResult) and valid.valid; assert not invalid.valid and invalid.records == (); assert Diagnostic(code='smoke', message='ok', severity=DiagnosticSeverity.WARNING).diagnostic_version == 1"
           wheel-smoke/bin/talika --help
           wheel-smoke/bin/talika describe talika.schema:RowTable
+          wheel-smoke/bin/python -m pip install "gherkin-official>=29.0"
+          wheel-smoke/bin/python -c "from pathlib import Path; Path('wheel-smoke.feature').write_text('Feature: Smoke\\n  Scenario: Valid\\n    Given values:\\n      | value |\\n      | ok    |\\n', encoding='utf-8'); Path('wheel_smoke_schema.py').write_text('from talika import RowTable, field\\nclass SmokeTable(RowTable):\\n    value = field(\\\"value\\\", required=True)\\n', encoding='utf-8')"
+          wheel-smoke/bin/talika check wheel-smoke.feature --schema wheel_smoke_schema.py:SmokeTable --format json | wheel-smoke/bin/python -c "import json, sys; payload = json.load(sys.stdin); assert payload['format_version'] == 1 and payload['status'] == 'valid', payload"

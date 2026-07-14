@@ -29,10 +29,12 @@ That message carries two kinds of information:
 
 ## What the fields are for
 
-`schema` tells you which contract was parsing the table. `field` tells you
-which declared table field failed. `row` and `column` point to the authored
-cell. `value` preserves what the author wrote. `code` gives tooling a stable
-category.
+`schema_name` tells you which contract was parsing the table. `field_name`
+identifies its Python declaration, while `field_label` preserves the authored
+label. `source_uri`, `row`, and `column` point to the authored cell.
+`source_value` preserves what the author wrote, `logical_value` records what a
+transformer produced, and `code` gives tooling a stable category. Compatibility
+`TableError` properties such as `schema`, `field`, and `value` remain available.
 
 !!! example "Reading the diagnostic"
     The reader does not need to inspect the parser function first. They can go
@@ -49,6 +51,9 @@ During authoring, it is often better to report independent problems together:
 
 See how to [build an error from a source cell](../guides/advanced/source-model.md#build-errors-from-source-cells){ data-preview }
 and how to [inspect an aggregate of collected errors](../guides/advanced/collect-errors.md#inspect-the-aggregate){ data-preview }.
+
+Tools that should not raise can use
+[`Schema.validate()` and Diagnostic Model v1](../guides/advanced/diagnostics.md){ data-preview }.
 
 This helps feature authors fix a table in one pass instead of chasing one
 failure per test run.

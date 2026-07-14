@@ -85,7 +85,7 @@ def test_cell_dsl_composition_uses_first_matching_dsl():
     assert [record.value for record in records] == [None, "generated-title", "literal"]
 
 
-def test_transformer_pipeline_runs_left_to_right_and_preserves_sources():
+def test_transformer_pipeline_runs_left_to_right_and_preserves_sources(tmp_path):
     class Uppercase:
         def transform(self, table, context, *, schema=None):
             rows = [list(row) for row in table.rows]
@@ -99,12 +99,15 @@ def test_transformer_pipeline_runs_left_to_right_and_preserves_sources():
             return TableData.from_cells(rows)
 
     pipeline = compose_transformers(Uppercase(), Prefix())
+    source = tmp_path / "values.feature"
     transformed = pipeline.transform(
-        TableData.from_rows([["value"], ["news"]]), ParseContext()
+        TableData.from_rows([["value"], ["news"]], source=source), ParseContext()
     )
 
     assert transformed.to_rows() == [["value"], ["QA-NEWS"]]
     assert transformed.cell(2, 1).source_value == "news"
+    assert transformed.source_uri == source.resolve().as_uri()
+    assert transformed.cell(2, 1).source_uri == source.resolve().as_uri()
 
 
 def test_schema_can_use_transformer_pipeline():

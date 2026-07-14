@@ -20,6 +20,7 @@ from .checker import (
     discover_feature_tables,
 )
 from .context import CellContext, DefaultContext, ParseContext
+from .diagnostics import Diagnostic, DiagnosticSeverity, ValidationResult
 from .dsl import CellDSL, CellDSLChain, compose_cell_dsls
 from .errors import (
     SchemaDefinitionError,
@@ -59,7 +60,7 @@ from .parsers import (
     split,
     string,
 )
-from .parsing import parse_table, parse_table_records
+from .parsing import parse_table, parse_table_records, validate_table
 from .schema import ColumnTable, RowTable, TableFields
 from .sources import RecordSource
 from .table import TableCell, TableData
@@ -72,7 +73,7 @@ from .transformers import (
 try:
     __version__ = version("talika")
 except PackageNotFoundError:
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
 __all__ = [
     "TableError",
@@ -84,6 +85,8 @@ __all__ = [
     "CellContext",
     "ColumnTable",
     "ColumnGroupExpander",
+    "Diagnostic",
+    "DiagnosticSeverity",
     "Field",
     "FeatureDiagnostic",
     "FeatureTable",
@@ -104,6 +107,7 @@ __all__ = [
     "TableTransformer",
     "TransformerPipeline",
     "VariantContract",
+    "ValidationResult",
     "SchemaDefinitionError",
     "SuffixRepeat",
     "__version__",
@@ -124,6 +128,7 @@ __all__ = [
     "optional",
     "parse_table",
     "parse_table_records",
+    "validate_table",
     "reference",
     "check_feature",
     "discover_feature_tables",
