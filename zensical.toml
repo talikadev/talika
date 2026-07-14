@@ -49,6 +49,7 @@ nav = [
       {"pytest-bdd" = "guides/basic/pytest-bdd.md"},
     ]},
     {"Advanced" = [
+      {"Diagnostics And Validation" = "guides/advanced/diagnostics.md"},
       {"Collect Errors" = "guides/advanced/collect-errors.md"},
       {"Output Models" = "guides/advanced/output-models.md"},
       {"References" = "guides/advanced/references.md"},
@@ -72,6 +73,7 @@ nav = [
     {"Parsers" = "reference/parsers.md"},
     {"Annotation Parsers" = "reference/annotations.md"},
     {"Errors" = "reference/errors.md"},
+    {"Diagnostics" = "reference/diagnostics.md"},
     {"Parse Context" = "reference/context.md"},
     {"Tables And Cells" = "reference/table.md"},
     {"Record Sources" = "reference/sources.md"},

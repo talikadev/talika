@@ -27,6 +27,11 @@ This schema can parse tables, but it can also describe itself.
 `describe()` returns a frozen `TableContract`. It is safe to cache, compare,
 serialize, or use as input for documentation and editor tooling.
 
+Talika builds this contract from the same immutable compiled schema plan used
+by parsing. Description therefore does not re-walk the class hierarchy or
+reinterpret mutable class attributes. The compiled plan itself is private;
+`TableContract` remains the supported introspection API.
+
 !!! tip "Use contracts for tooling"
     A schema contract is metadata. It does not parse cells, run validators, hit
     references, or build output objects. It tells tools what the schema has

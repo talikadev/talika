@@ -38,6 +38,11 @@ make sure labels and rows are usable. Field parsers convert cell text into
 Python values. Validation checks the records and the table as a whole. Output
 construction gives the test the object style it wants.
 
+`parse()` runs the full path. `parse_records()` and non-raising `validate()`
+stop after validation and skip output construction. Each phase produces the
+same Diagnostic Model v1 values, and a failed phase stops later work that
+depends on complete records.
+
 ```python title="One schema can own the lifecycle"
 --8<-- "docs_src/learn/table-lifecycle.py:contract"
 ```

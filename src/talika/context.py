@@ -80,6 +80,7 @@ class CellContext:
         item_id: Parsed record ID when available.
         source_value: Original feature-file text before transformation.
         user_data: Read-only project data from ``ParseContext``.
+        source_uri: URI of the source document when known.
 
     !!! warning
         Parser functions receive the current value as a separate argument. Use
@@ -96,6 +97,7 @@ class CellContext:
     item_id: Any | None
     source_value: str
     user_data: Mapping[str, Any]
+    source_uri: str | None = None
 
 
 @dataclass(frozen=True)
@@ -113,6 +115,7 @@ class DefaultContext:
         field_label: Canonical Gherkin data table label for the field.
         item_id: Parsed record ID when available.
         user_data: Read-only project data from ``ParseContext``.
+        source_uri: URI of the source document when known.
 
     !!! info
         Default factories run only for missing optional fields, not for
@@ -125,3 +128,4 @@ class DefaultContext:
     field_label: str
     item_id: Any | None
     user_data: Mapping[str, Any]
+    source_uri: str | None = None

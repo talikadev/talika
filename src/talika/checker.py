@@ -17,7 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .errors import TableError, TableErrorCode, TableErrors
+from .diagnostics import Diagnostic
+from .errors import TableError, TableErrorCode
 from .schema import BaseTable
 from .table import TableCell, TableData
 
@@ -69,6 +70,11 @@ class FeatureDiagnostic:
     step: str
     error: TableError
 
+    @property
+    def diagnostic(self) -> Diagnostic:
+        """Return the shared immutable Diagnostic Model v1 value."""
+        return self.error.diagnostic
+
 
 def _gherkin_tools() -> tuple[Any, Any]:
     """Load the optional official Gherkin parser and pickle compiler.
@@ -91,15 +97,17 @@ def _gherkin_tools() -> tuple[Any, Any]:
         raise TableError(
             "Feature checking requires the 'cli' extra: pip install 'talika[cli]'",
             code=TableErrorCode.CHECKER_FAILED,
+            cause=exc,
         ) from exc
     return Parser, Compiler
 
 
-def _table_data(data_table: Mapping[str, Any]) -> TableData:
+def _table_data(data_table: Mapping[str, Any], *, source: Path) -> TableData:
     """Convert a Gherkin AST data table into ``TableData``.
 
     Args:
         data_table: Gherkin AST mapping containing rows, cells, and locations.
+        source: Resolved feature file providing the table.
 
     Returns:
         Source-aware ``TableData`` with feature-file coordinates.
@@ -123,7 +131,7 @@ def _table_data(data_table: Mapping[str, Any]) -> TableData:
                 )
             )
         rows.append(cells)
-    return TableData.from_cells(rows)
+    return TableData.from_cells(rows, source=source.resolve())
 
 
 def _scenario_nodes(feature: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
@@ -168,6 +176,8 @@ def _compiled_table_data(
     source_table: Mapping[str, Any],
     compiled_table: Mapping[str, Any],
     parameters: Mapping[str, Mapping[str, Any]],
+    *,
+    source: Path,
 ) -> TableData:
     """Combine compiled logical values with precise AST source locations."""
     rows: list[list[TableCell]] = []
@@ -202,7 +212,7 @@ def _compiled_table_data(
                 )
             )
         rows.append(cells)
-    return TableData.from_cells(rows)
+    return TableData.from_cells(rows, source=source.resolve())
 
 
 def _outline_tables(
@@ -259,6 +269,7 @@ def _outline_tables(
                         source_table,
                         compiled_table,
                         parameters,
+                        source=source_path,
                     ),
                 )
             )
@@ -302,6 +313,8 @@ def discover_feature_tables(
         raise TableError(
             f"Feature discovery failed for {source_path}: {exc}",
             code=TableErrorCode.CHECKER_FAILED,
+            source_uri=source_path.resolve().as_uri(),
+            cause=exc,
         ) from exc
     feature = document.get("feature")
     if feature is None:
@@ -334,7 +347,7 @@ def discover_feature_tables(
                     feature=feature.get("name", ""),
                     scenario=scenario_name,
                     step=step_text,
-                    table=_table_data(data_table),
+                    table=_table_data(data_table, source=source_path),
                 )
             )
     return discovered
@@ -400,18 +413,10 @@ def check_feature_tables(
     """
     diagnostics: list[FeatureDiagnostic] = []
     for discovered in tables:
-        try:
-            schema.parse_records(
-                discovered.table,
-                context=context,
-                error_mode="collect",
-            )
-        except TableErrors as exc:
-            errors = exc.errors
-        except TableError as exc:
-            errors = (exc,)
-        else:
-            errors = ()
+        result = schema.validate(discovered.table, context=context)
+        errors = tuple(
+            TableError.from_diagnostic(diagnostic) for diagnostic in result.diagnostics
+        )
         diagnostics.extend(
             FeatureDiagnostic(
                 path=discovered.path,

@@ -285,6 +285,11 @@ If a default factory fails, Talika reports a default-factory diagnostic. The
 error is tied to the field, but there is no row or column because the field was
 missing.
 
+An ordinary factory exception becomes `default_factory_failed` and remains
+available as the diagnostic cause. A deliberate `TableError`, `TableErrors`,
+or `SchemaDefinitionError` passes through unchanged, preserving a project code
+or hint.
+
 ```python title="A default factory that fails"
 --8<-- "docs_src/guides/basic/missing-empty-defaults.py:default-factory-error"
 ```

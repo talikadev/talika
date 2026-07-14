@@ -23,6 +23,7 @@ these pages stay close to the Python API.
 - Parsers
 - Annotation parsers
 - Errors
+- Diagnostics and validation results
 - Parse context
 - Tables and cells
 - Record sources

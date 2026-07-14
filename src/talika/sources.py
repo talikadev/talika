@@ -27,6 +27,7 @@ class RecordSource:
         row: Source row for a row-oriented record.
         column: Source key/ID column for a column-oriented record.
         cells: Mapping from schema attribute names to their source cells.
+        source_uri: URI of the source document when known.
 
     !!! warning
         Some fields may not have source cells, especially values produced by
@@ -38,6 +39,7 @@ class RecordSource:
     row: int | None
     column: int | None
     cells: Mapping[str, TableCell]
+    source_uri: str | None = None
 
     @classmethod
     def create(
@@ -47,6 +49,7 @@ class RecordSource:
         row: int | None = None,
         column: int | None = None,
         cells: Mapping[str, TableCell] | None = None,
+        source_uri: str | None = None,
     ) -> RecordSource:
         """Create immutable metadata from parser-owned source values.
 
@@ -55,6 +58,7 @@ class RecordSource:
             row: Source row for row-oriented records.
             column: Source key/ID column for column-oriented records.
             cells: Mapping from schema field names to source cells.
+            source_uri: URI of the source document when known.
 
         Returns:
             A frozen ``RecordSource`` with a read-only cell mapping.
@@ -69,6 +73,7 @@ class RecordSource:
             row=row,
             column=column,
             cells=MappingProxyType(dict(cells or {})),
+            source_uri=source_uri,
         )
 
     def source_for(self, field_name: str) -> TableCell:

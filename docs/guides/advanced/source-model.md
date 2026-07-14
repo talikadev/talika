@@ -45,6 +45,12 @@ upgrades those rows into `TableData` before parsing.
 - `source_row`, the original one-based row number
 - `source_column`, the original one-based column number
 - `source_value`, the original authored value
+- `source_uri`, the source document URI when known
+
+The table itself also has `source_uri`. Pass a URI string or a filesystem path
+to `TableData.from_rows(..., source=...)` or
+`TableData.from_cells(..., source=...)`. Paths become absolute `file:` URIs;
+URI strings remain unchanged.
 
 ```bash { .talika-terminal title="Source-aware table cells" .speed-3}
 --8<-- "docs_src/guides/advanced/source-model.py:tabledata-output"
@@ -76,6 +82,10 @@ authored table cell.
 
 `TableData.from_cells(...)` is used when code already has source-aware cells
 and wants to arrange them into a new logical table.
+
+A transformer result without an explicit source inherits its input table's
+URI. Built-in transformers preserve it directly, and transformer pipelines
+carry it between stages.
 
 !!! note "to_rows only returns current values"
     `to_rows()` is useful for display and debugging, but it drops source
@@ -218,9 +228,10 @@ Custom validators and transformers can build precise diagnostics from a
 --8<-- "docs_src/guides/advanced/source-model.py:error-from-cell-output"
 ```
 
-`TableError.from_cell(...)` copies the source row, source column, and source
-value into the diagnostic. Use it when a custom rule can identify the exact
-authored cell that caused the failure.
+`TableError.from_cell(...)` copies the source URI, source row, source column,
+original source value, and current logical value into the diagnostic. Use it
+when a custom rule can identify the exact authored cell that caused the
+failure.
 
 !!! warning "Point to the cell the author can fix"
     If the problem belongs to one table cell, build the error from that cell.

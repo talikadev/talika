@@ -201,38 +201,34 @@ def describe_schema(schema: Any) -> TableContract:
         talika metaclass. Use ``Table.describe()`` for the public API.
 
     """
-    orientation = (
-        "column"
-        if any(base.__name__ == "ColumnTable" for base in schema.mro())
-        else "row"
-    )
+    plan = schema.__schema_plan__
+    orientation = plan.orientation.value if plan.orientation is not None else "row"
     fields = tuple(
-        FieldContract.from_field(name, declared)
-        for name, declared in schema.__fields__.items()
+        FieldContract.from_field(item.name, item.declaration) for item in plan.fields
     )
     variants = tuple(
         VariantContract(
             value=value,
-            schema_name=variant.__dict__.get(
-                "__schema_display_name__", variant.__name__
-            ),
+            schema_name=variant.display_name,
             fields=tuple(
-                FieldContract.from_field(name, declared)
-                for name, declared in variant.__fields__.items()
+                FieldContract.from_field(item.name, item.declaration)
+                for item in variant.fields
             ),
-            output_model=_callable_name(variant.output_model),
-            output_builder=_callable_name(variant.build_output) or "build_output",
+            output_model=_callable_name(variant.hooks.output_model),
+            output_builder=(
+                _callable_name(variant.hooks.build_output) or "build_output"
+            ),
         )
-        for value, variant in schema.__variants__.items()
+        for value, variant in plan.variants.items()
     )
     return TableContract(
-        schema_name=schema.__dict__.get("__schema_display_name__", schema.__name__),
+        schema_name=plan.display_name,
         orientation=orientation,
         fields=fields,
         variants=variants,
-        unknown_fields=schema.unknown_fields,
-        inapplicable_fields=schema.inapplicable_fields,
-        transformer=_callable_name(schema.table_transformer),
-        output_model=_callable_name(schema.output_model),
-        output_builder=_callable_name(schema.build_output) or "build_output",
+        unknown_fields=plan.policies.unknown_fields.value,
+        inapplicable_fields=plan.policies.inapplicable_fields.value,
+        transformer=_callable_name(plan.hooks.table_transformer),
+        output_model=_callable_name(plan.hooks.output_model),
+        output_builder=_callable_name(plan.hooks.build_output) or "build_output",
     )

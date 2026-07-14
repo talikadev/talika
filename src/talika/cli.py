@@ -21,7 +21,8 @@ from pathlib import Path
 from typing import Any
 
 from .checker import FeatureDiagnostic, check_feature_tables, discover_feature_tables
-from .errors import TableError, TableErrorCode
+from .diagnostics import Diagnostic, DiagnosticSeverity, stable_json_value
+from .errors import SchemaDefinitionError, TableError, TableErrorCode
 from .schema import BaseTable
 
 
@@ -121,21 +122,21 @@ def _context(reference: str | None) -> Mapping[str, Any] | None:
     return value
 
 
-def _json_default(value: Any) -> str:
-    """Return a readable JSON fallback for project-owned values.
-
-    Args:
-        value: Object that ``json.dumps`` does not know how to encode.
-
-    Returns:
-        ``repr(value)`` for deterministic diagnostic output.
-
-    !!! info
-        Discriminator values and defaults can be project-owned objects, so JSON
-        output needs a stable fallback rather than failing serialization.
-
-    """
-    return repr(value)
+def _diagnostic_data(diagnostic: Diagnostic) -> dict[str, Any]:
+    """Return Model v1 fields plus supported legacy aliases."""
+    payload = diagnostic.as_dict()
+    payload.update(
+        {
+            "schema": diagnostic.schema_name,
+            "field": diagnostic.field_label or diagnostic.field_name,
+            "value": (
+                stable_json_value(diagnostic.source_value)
+                if diagnostic.has_source_value
+                else None
+            ),
+        }
+    )
+    return payload
 
 
 def _diagnostic_payload(diagnostic: FeatureDiagnostic) -> dict[str, Any]:
@@ -153,22 +154,16 @@ def _diagnostic_payload(diagnostic: FeatureDiagnostic) -> dict[str, Any]:
         can consume diagnostics without understanding Python exception objects.
 
     """
-    error = diagnostic.error
-    return {
-        "path": str(diagnostic.path),
-        "feature": diagnostic.feature,
-        "scenario": diagnostic.scenario,
-        "step": diagnostic.step,
-        "code": error.code,
-        "message": error.message,
-        "hint": error.hint,
-        "schema": error.schema,
-        "field": error.field,
-        "row": error.row,
-        "column": error.column,
-        "item_id": error.item_id,
-        "value": error.value if error.has_value else None,
-    }
+    payload = _diagnostic_data(diagnostic.diagnostic)
+    payload.update(
+        {
+            "path": str(diagnostic.path),
+            "feature": diagnostic.feature,
+            "scenario": diagnostic.scenario,
+            "step": diagnostic.step,
+        }
+    )
+    return payload
 
 
 def _print_json(payload: Mapping[str, Any]) -> None:
@@ -182,18 +177,27 @@ def _print_json(payload: Mapping[str, Any]) -> None:
         automation logs.
 
     """
-    print(json.dumps(payload, indent=2, sort_keys=True, default=_json_default))
+    print(
+        json.dumps(
+            stable_json_value(payload),
+            indent=2,
+            sort_keys=True,
+            allow_nan=False,
+        )
+    )
 
 
 def _checker_failure(exc: Exception) -> TableError:
     """Normalize an operational CLI failure without exposing a traceback."""
-    if isinstance(exc, TableError) and exc.code == TableErrorCode.CHECKER_FAILED.value:
+    if isinstance(exc, TableError):
         return exc
+    if isinstance(exc, SchemaDefinitionError):
+        return TableError.from_diagnostic(exc.diagnostic)
     error = TableError(
         f"Static checker failed: {exc}",
         code=TableErrorCode.CHECKER_FAILED,
+        cause=exc,
     )
-    error.__cause__ = exc
     return error
 
 
@@ -203,23 +207,17 @@ def _render_checker_failure(error: TableError, output_format: str) -> None:
         _print_json(
             {
                 "status": "failed",
+                "format_version": 1,
                 "matched_tables": 0,
                 "error_count": 1,
+                "warning_count": 0,
                 "diagnostics": [
                     {
+                        **_diagnostic_data(error.diagnostic),
                         "path": None,
                         "feature": None,
                         "scenario": None,
                         "step": None,
-                        "code": error.code,
-                        "message": error.message,
-                        "hint": error.hint,
-                        "schema": error.schema,
-                        "field": error.field,
-                        "row": error.row,
-                        "column": error.column,
-                        "item_id": error.item_id,
-                        "value": error.value if error.has_value else None,
                     }
                 ],
             }
@@ -280,7 +278,12 @@ def _render_describe_text(schema: type[BaseTable]) -> str:
     if contract.variants:
         lines.append("Variants:")
         for variant in contract.variants:
-            lines.append(f"  - {variant.value!r}: {variant.schema_name}")
+            value = json.dumps(
+                stable_json_value(variant.value),
+                sort_keys=True,
+                allow_nan=False,
+            )
+            lines.append(f"  - {value}: {variant.schema_name}")
             variant_fields = ", ".join(field.name for field in variant.fields)
             lines.append(f"    fields: {variant_fields}")
     return "\n".join(lines)
@@ -394,20 +397,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     if args.format == "json":
-        status = "failed" if diagnostics else "valid"
+        error_count = sum(
+            diagnostic.diagnostic.severity is DiagnosticSeverity.ERROR
+            for diagnostic in diagnostics
+        )
+        warning_count = len(diagnostics) - error_count
+        status = "failed" if error_count else "valid"
         if matched_tables == 0:
             status = "no_matches"
         _print_json(
             {
+                "format_version": 1,
                 "status": status,
                 "matched_tables": matched_tables,
-                "error_count": len(diagnostics),
+                "error_count": error_count,
+                "warning_count": warning_count,
                 "diagnostics": [
                     _diagnostic_payload(diagnostic) for diagnostic in diagnostics
                 ],
             }
         )
-        if diagnostics:
+        if error_count:
             return 1
         if matched_tables == 0:
             return 2
@@ -417,18 +427,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         error = diagnostic.error
         row = error.row or 1
         column = error.column or 1
+        severity = "warning: " if error.severity is DiagnosticSeverity.WARNING else ""
         print(
-            f"{diagnostic.path}:{row}:{column}: {error.code}: "
+            f"{diagnostic.path}:{row}:{column}: {severity}{error.code}: "
             f"{error} [scenario={diagnostic.scenario!r}]"
         )
 
-    if diagnostics:
-        print(f"Found {len(diagnostics)} table error(s) in {matched_tables} table(s).")
+    error_count = sum(
+        diagnostic.diagnostic.severity is DiagnosticSeverity.ERROR
+        for diagnostic in diagnostics
+    )
+    warning_count = len(diagnostics) - error_count
+    if error_count:
+        print(f"Found {error_count} table error(s) in {matched_tables} table(s).")
         return 1
     if matched_tables == 0:
         print("No matching Gherkin data tables were found.")
         return 2
-    print(f"Validated {matched_tables} table(s).")
+    suffix = f" with {warning_count} warning(s)" if warning_count else ""
+    print(f"Validated {matched_tables} table(s){suffix}.")
     return 0
 
 

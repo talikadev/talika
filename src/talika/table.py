@@ -19,10 +19,23 @@ cell syntax the user actually wrote.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import cast
 
 RawTable = Sequence[Sequence[str]]
+
+
+def _normalize_source_uri(source: str | Path | None) -> str | None:
+    if source is None:
+        return None
+    if isinstance(source, Path):
+        return source.resolve().as_uri()
+    if not isinstance(source, str):
+        raise TypeError("table source must be a string, Path, or None")
+    if not source:
+        raise ValueError("table source cannot be empty")
+    return source
 
 
 @dataclass(frozen=True)
@@ -35,6 +48,7 @@ class TableCell:
         source_row: One-based row number of the original Gherkin data table cell.
         source_column: One-based column number of the original Gherkin data table cell.
         source_value: The exact value before any table transformation.
+        source_uri: URI of the source document when known.
 
     A transformer may produce several cells from one source cell. Each new
     cell can therefore have a different ``value`` while sharing the same
@@ -52,6 +66,7 @@ class TableCell:
     source_row: int
     source_column: int
     source_value: str
+    source_uri: str | None = None
 
     def __post_init__(self) -> None:
         """Validate the immutable source-aware cell boundary."""
@@ -59,6 +74,10 @@ class TableCell:
             raise TypeError("TableCell.value must be a string")
         if not isinstance(self.source_value, str):
             raise TypeError("TableCell.source_value must be a string")
+        if self.source_uri is not None and (
+            not isinstance(self.source_uri, str) or not self.source_uri
+        ):
+            raise ValueError("TableCell.source_uri must be a non-empty string")
         for name, coordinate in (
             ("source_row", self.source_row),
             ("source_column", self.source_column),
@@ -118,6 +137,7 @@ class TableCell:
             source_row=self.source_row,
             source_column=self.source_column,
             source_value=self.source_value,
+            source_uri=self.source_uri,
         )
 
 
@@ -131,6 +151,7 @@ class TableData:
 
     Attributes:
         rows: Immutable rows of immutable ``TableCell`` tuples.
+        source_uri: URI of the source document when known.
 
     !!! info
         Direct construction validates every cell and normalizes nested row
@@ -140,6 +161,7 @@ class TableData:
     """
 
     rows: tuple[tuple[TableCell, ...], ...]
+    source_uri: str | None = None
 
     def __post_init__(self) -> None:
         """Validate cells and normalize directly constructed rows to tuples."""
@@ -148,6 +170,7 @@ class TableData:
         ):
             raise TypeError("TableData rows must be a sequence of row sequences")
 
+        normalized_source = _normalize_source_uri(self.source_uri)
         normalized_rows: list[tuple[TableCell, ...]] = []
         for row_number, row in enumerate(self.rows, start=1):
             if isinstance(row, (str, bytes, bytearray)) or not isinstance(
@@ -163,15 +186,29 @@ class TableData:
                         "TableData cells must be TableCell instances "
                         f"(row {row_number}, column {column_number})"
                     )
-            normalized_rows.append(normalized_row)
+            normalized_rows.append(
+                tuple(
+                    replace(cell, source_uri=normalized_source)
+                    if normalized_source is not None and cell.source_uri is None
+                    else cell
+                    for cell in normalized_row
+                )
+            )
         object.__setattr__(self, "rows", tuple(normalized_rows))
+        object.__setattr__(self, "source_uri", normalized_source)
 
     @classmethod
-    def from_rows(cls, rows: RawTable) -> TableData:
+    def from_rows(
+        cls,
+        rows: RawTable,
+        *,
+        source: str | Path | None = None,
+    ) -> TableData:
         """Wrap ordinary string rows while recording source locations.
 
         Args:
             rows: Raw Gherkin data table rows, typically from pytest-bdd.
+            source: Optional URI string or filesystem path for provenance.
 
         Returns:
             A source-aware ``TableData`` instance.
@@ -209,10 +246,17 @@ class TableData:
                     )
                 )
             normalized_rows.append(tuple(normalized_row))
-        return cls(rows=tuple(normalized_rows))
+        return cls(
+            rows=tuple(normalized_rows), source_uri=_normalize_source_uri(source)
+        )
 
     @classmethod
-    def from_cells(cls, rows: Sequence[Sequence[TableCell]]) -> TableData:
+    def from_cells(
+        cls,
+        rows: Sequence[Sequence[TableCell]],
+        *,
+        source: str | Path | None = None,
+    ) -> TableData:
         """Build a table from cells whose source information already exists.
 
         Custom transformers use this constructor after arranging existing or
@@ -220,6 +264,7 @@ class TableData:
 
         Args:
             rows: Logical rows of source-aware cells.
+            source: Optional URI string or filesystem path for provenance.
 
         Returns:
             A ``TableData`` instance containing immutable row/cell tuples.
@@ -229,7 +274,10 @@ class TableData:
             information. Prefer ``cell.with_value(...)`` when transforming.
 
         """
-        return cls(rows=tuple(tuple(row) for row in rows))
+        return cls(
+            rows=tuple(tuple(row) for row in rows),
+            source_uri=_normalize_source_uri(source),
+        )
 
     @classmethod
     def ensure(cls, table: RawTable | TableData) -> TableData:
@@ -292,3 +340,7 @@ class TableData:
 
         """
         return [[cell.value for cell in row] for row in self.rows]
+
+    def with_source(self, source: str | Path) -> TableData:
+        """Return this table with normalized source provenance attached."""
+        return TableData(rows=self.rows, source_uri=_normalize_source_uri(source))

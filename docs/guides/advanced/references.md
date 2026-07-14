@@ -277,6 +277,11 @@ parser.
 The error points at the reference cell, not the ID row. The ID parser is the
 rule being reused, but the invalid authored value is in `Parent`.
 
+If that parser raises an ordinary exception while converting a reference key,
+Talika reports `reference_failed` and retains the cause. A deliberate
+`TableError`, `TableErrors`, or `SchemaDefinitionError` passes through
+unchanged.
+
 !!! note "Typed references use target parsing only for lookup"
     The reference field itself does not become an integer. It becomes the
     resolved record object. The key is converted only so Talika can find the

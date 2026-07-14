@@ -19,6 +19,7 @@ from collections.abc import Mapping
 from typing import Any, TypeVar
 
 from .context import ParseContext
+from .diagnostics import ValidationResult
 from .schema import BaseTable
 from .table import RawTable, TableData
 
@@ -88,3 +89,31 @@ def parse_table_records(
 
     """
     return schema.parse_records(datatable, context=context, error_mode=error_mode)
+
+
+def validate_table(
+    schema: type[TableT],
+    datatable: RawTable | TableData,
+    *,
+    context: Mapping[str, Any] | ParseContext | None = None,
+) -> ValidationResult[TableT]:
+    """Validate a table and return records or diagnostics without raising.
+
+    This is the functional equivalent of ``schema.validate(datatable)``.
+    Output-model conversion is skipped, and invalid results never expose
+    partially parsed records.
+
+    Args:
+        schema: Concrete ``RowTable`` or ``ColumnTable`` subclass.
+        datatable: Raw string rows or source-aware ``TableData``.
+        context: Optional project data or existing parse context.
+
+    Returns:
+        A frozen validation result containing complete records or diagnostics.
+
+    !!! note
+        Schema declaration errors and API misuse still raise because they are
+        not authored table-data diagnostics.
+
+    """
+    return schema.validate(datatable, context=context)

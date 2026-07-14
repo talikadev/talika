@@ -96,6 +96,20 @@ This does the same parsing work as:
 The fixture does not create another schema registry or another parsing
 lifecycle. It simply delegates to the schema passed with `schema=...`.
 
+During a pytest-bdd step, the plugin binds the feature's absolute filename and
+Gherkin cell coordinates to the exact raw `datatable` object. Calling
+`talika.parse(...)`, `talika.parse_records(...)`, or `talika.validate(...)`
+upgrades that object to source-aware `TableData`, then clears the binding after
+the step succeeds or fails. Each fixture instance keeps its own binding, so
+parallel tests do not share provenance.
+
+!!! note "Direct schema calls cannot infer a feature filename"
+    `UserTable.parse(datatable)` still parses correctly, but a raw nested list
+    carries no pytest-bdd metadata. Use the `talika` fixture when diagnostics
+    should automatically include the feature URI and absolute Gherkin cell
+    coordinates. Scenario-outline runtime locations point to pytest-bdd's
+    rendered template cell.
+
 !!! tip "Use the fixture for dependency-injection style"
     Some teams prefer step functions where parsing always flows through a
     fixture argument. Use `talika.parse(...)` when that style makes your BDD
@@ -179,6 +193,20 @@ The difference matters when a schema uses output conversion:
     carry Talika metadata. Use `parse_records(...)` when a step needs
     `table_source`, `source_for(...)`, or intermediate schema fields.
 
+## Validate Without Raising
+
+Use the fixture's `validate(...)` method when a step or helper needs structured
+diagnostics instead of an exception:
+
+```python
+result = talika.validate(datatable, schema=UserTable)
+assert result.valid, result.errors
+```
+
+Validation returns schema records only when the complete table is valid and
+always skips output conversion. It preserves the same automatic pytest-bdd
+source URI and cell coordinates as the fixture's parsing methods.
+
 ## Use the Functional API When Preferred
 
 Some codebases prefer functions over schema classmethod calls. Talika provides
@@ -192,6 +220,7 @@ These helpers delegate to the same schema lifecycle:
 
 - `parse_table(UserTable, datatable)` is equivalent to `UserTable.parse(datatable)`
 - `parse_table_records(UserTable, datatable)` is equivalent to `UserTable.parse_records(datatable)`
+- `validate_table(UserTable, datatable)` is equivalent to `UserTable.validate(datatable)`
 
 They forward `context=...` and `error_mode=...` just like the schema methods.
 

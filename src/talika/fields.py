@@ -21,6 +21,7 @@ from collections.abc import (
     Sequence,
 )
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from types import MappingProxyType
 from typing import Any
 
@@ -75,7 +76,8 @@ class Field:
     !!! warning
         ``Field`` instances are mutable during class creation because
         ``__set_name__`` records their Python attribute name. Schema
-        inheritance uses ``clone()`` to avoid sharing that mutable state.
+        inheritance uses ``clone()`` to avoid sharing that mutable state. The
+        declaration is frozen after its schema plan is compiled.
 
     """
 
@@ -92,6 +94,28 @@ class Field:
     variants: Mapping[Any, type] | None = None
     reference: ReferenceSpec | None = None
     name: str = ""
+    _owner: type | None = dataclass_field(
+        default=None, init=False, repr=False, compare=False
+    )
+    _origin: tuple[str, str] | None = dataclass_field(
+        default=None, init=False, repr=False, compare=False
+    )
+    _frozen: bool = dataclass_field(
+        default=False, init=False, repr=False, compare=False
+    )
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Set declaration metadata while the field is being compiled.
+
+        Compiled declarations are immutable. Parsed record assignment still
+        uses :meth:`__set__` and is deliberately unaffected by this guard.
+        """
+        if getattr(self, "_frozen", False):
+            raise AttributeError(
+                f"Field metadata is frozen; cannot assign {name!r}. "
+                "Declare a new field on a schema subclass instead."
+            )
+        object.__setattr__(self, name, value)
 
     def clone(self) -> Field:
         """Return an independent declaration for schema inheritance.
@@ -105,7 +129,7 @@ class Field:
             schema's declaration.
 
         """
-        return Field(
+        cloned = Field(
             label=self.label,
             aliases=self.aliases,
             required=self.required,
@@ -120,6 +144,8 @@ class Field:
             reference=self.reference,
             name=self.name,
         )
+        object.__setattr__(cloned, "_origin", self._origin)
+        return cloned
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Record the Python attribute name assigned by a schema class.
@@ -134,7 +160,19 @@ class Field:
             keeps normal Python identifiers.
 
         """
+        if self._owner is not None and self._owner is not owner:
+            raise AttributeError(
+                f"Field {self.label!r} is already bound to "
+                f"{self._owner.__name__}.{self.name}"
+            )
         self.name = name
+        self._owner = owner
+        if self._origin is None:
+            self._origin = (f"{owner.__module__}.{owner.__qualname__}", name)
+
+    def _freeze(self) -> None:
+        """Freeze declaration metadata after schema compilation."""
+        object.__setattr__(self, "_frozen", True)
 
     def __get__(self, instance: object | None, owner: type | None = None) -> Any:
         """Return the declaration on classes or parsed value on records.

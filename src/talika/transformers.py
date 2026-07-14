@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from typing import Protocol
 
 from .context import ParseContext
-from .errors import TableError, TableErrorCode
+from .errors import SchemaDefinitionError, TableError, TableErrorCode, TableErrors
 from .table import TableData
 
 
@@ -122,23 +122,32 @@ class TransformerPipeline:
         current = table
         for index, transformer in enumerate(self.transformers, start=1):
             stage_name = type(transformer).__name__
+            source_uri = current.source_uri
             try:
-                current = transformer.transform(current, context, schema=schema)
-            except TableError:
+                transformed = transformer.transform(current, context, schema=schema)
+            except (TableError, TableErrors, SchemaDefinitionError):
                 raise
             except Exception as exc:
                 raise TableError(
                     f"Table transformer stage {index} ({stage_name}) failed: {exc}",
                     schema=schema,
                     code=TableErrorCode.TRANSFORM_FAILED,
+                    source_uri=current.source_uri,
+                    cause=exc,
                 ) from exc
-            if not isinstance(current, TableData):
+            if not isinstance(transformed, TableData):
                 raise TableError(
                     f"Table transformer stage {index} ({stage_name}) must return "
                     "TableData",
                     schema=schema,
                     code=TableErrorCode.INVALID_TRANSFORM,
+                    source_uri=source_uri,
                 )
+            current = (
+                transformed.with_source(source_uri)
+                if transformed.source_uri is None and source_uri is not None
+                else transformed
+            )
         return current
 
 

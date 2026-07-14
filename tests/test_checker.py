@@ -6,12 +6,16 @@ from types import ModuleType
 import pytest
 
 from talika import (
+    ColumnTable,
     RowTable,
     TableData,
     TableError,
     check_feature,
     discover_feature_tables,
+    discriminator_field,
     field,
+    id_field,
+    reference,
 )
 from talika.checker import FeatureTable, check_feature_tables
 from talika.cli import main
@@ -40,6 +44,7 @@ def test_discovery_uses_real_feature_file_coordinates():
     assert tables[0].scenario == "Invalid users"
     assert tables[0].table.cell(2, 1).source_row == 6
     assert tables[0].table.cell(2, 1).source_column == 15
+    assert tables[0].table.source_uri == Path(FEATURE_PATH).resolve().as_uri()
 
 
 def test_static_checker_collects_schema_diagnostics():
@@ -54,6 +59,8 @@ def test_static_checker_collects_schema_diagnostics():
         "parser_failed",
     ]
     assert diagnostics[0].error.row == 6
+    assert diagnostics[0].diagnostic is diagnostics[0].error.diagnostic
+    assert diagnostics[0].diagnostic.source_uri == Path(FEATURE_PATH).resolve().as_uri()
 
 
 def test_cli_reports_text_diagnostics(capsys):
@@ -103,9 +110,22 @@ def test_cli_reports_json_diagnostics(capsys):
     assert exit_code == 1
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "failed"
+    assert payload["format_version"] == 1
     assert payload["matched_tables"] == 1
+    assert payload["error_count"] == 2
+    assert payload["warning_count"] == 0
     assert payload["diagnostics"][0]["code"] == "empty_required"
     assert payload["diagnostics"][0]["hint"]
+    assert payload["diagnostics"][0]["diagnostic_version"] == 1
+    assert payload["diagnostics"][0]["field_name"] == "name"
+    assert payload["diagnostics"][0]["field_label"] == "name"
+    assert payload["diagnostics"][0]["has_item_id"] is False
+    assert payload["diagnostics"][0]["has_source_value"] is True
+    assert payload["diagnostics"][0]["source_value"] == ""
+    assert payload["diagnostics"][0]["logical_value"] == ""
+    assert (
+        payload["diagnostics"][0]["source_uri"] == Path(FEATURE_PATH).resolve().as_uri()
+    )
 
 
 def test_cli_describes_schema_as_text(capsys):
@@ -191,6 +211,38 @@ def test_cli_fails_when_filters_match_no_tables(capsys):
 
     assert exit_code == 2
     assert "No matching" in capsys.readouterr().out
+
+
+def test_cli_no_match_json_uses_the_versioned_empty_shape(capsys):
+    module = ModuleType("talika_cli_empty_json_schema")
+    module.CheckedUserTable = CheckedUserTable
+    sys.modules[module.__name__] = module
+    try:
+        exit_code = main(
+            [
+                "check",
+                FEATURE_PATH,
+                "--schema",
+                "talika_cli_empty_json_schema:CheckedUserTable",
+                "--step",
+                "a step that does not exist",
+                "--format",
+                "json",
+            ]
+        )
+    finally:
+        sys.modules.pop(module.__name__, None)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 2
+    assert payload == {
+        "diagnostics": [],
+        "error_count": 0,
+        "format_version": 1,
+        "matched_tables": 0,
+        "status": "no_matches",
+        "warning_count": 0,
+    }
 
 
 def test_cli_reuses_discovered_tables(monkeypatch, capsys):
@@ -307,6 +359,8 @@ def test_outlines_count_each_example_and_keep_original_filters(tmp_path, capsys)
     assert exit_code == 1
     assert payload["matched_tables"] == 3
     assert payload["error_count"] == 1
+    assert payload["format_version"] == 1
+    assert payload["warning_count"] == 0
     assert payload["diagnostics"][0]["row"] == 10
 
 
@@ -520,6 +574,64 @@ def test_bad_schema_import_uses_controlled_json(capsys):
     assert exit_code == 1
     assert payload["status"] == "failed"
     assert payload["diagnostics"][0]["code"] == "checker_failed"
+
+
+def test_cli_preserves_schema_definition_diagnostics(capsys):
+    class BrokenReferences(ColumnTable):
+        id = id_field("IDs")
+        kind = discriminator_field("Kind")
+        parent = reference("Parent", target="missing")
+
+    module = ModuleType("talika_broken_reference_schema")
+    module.BrokenReferences = BrokenReferences
+    sys.modules[module.__name__] = module
+    try:
+        exit_code = main(
+            [
+                "check",
+                FEATURE_PATH,
+                "--schema",
+                "talika_broken_reference_schema:BrokenReferences",
+                "--format",
+                "json",
+            ]
+        )
+    finally:
+        sys.modules.pop(module.__name__, None)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 1
+    assert payload["diagnostics"][0]["code"] == "schema_definition"
+
+
+def test_cli_preserves_internal_error_diagnostics(monkeypatch, capsys):
+    import talika.cli as cli
+
+    module = ModuleType("talika_internal_error_schema")
+    module.CheckedUserTable = CheckedUserTable
+    sys.modules[module.__name__] = module
+
+    def broken_check(*args, **kwargs):
+        raise TableError("Internal failure", code="internal_error")
+
+    monkeypatch.setattr(cli, "check_feature_tables", broken_check)
+    try:
+        exit_code = main(
+            [
+                "check",
+                FEATURE_PATH,
+                "--schema",
+                "talika_internal_error_schema:CheckedUserTable",
+                "--format",
+                "json",
+            ]
+        )
+    finally:
+        sys.modules.pop(module.__name__, None)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 1
+    assert payload["diagnostics"][0]["code"] == "internal_error"
 
 
 def test_bad_context_factory_uses_controlled_json(capsys):

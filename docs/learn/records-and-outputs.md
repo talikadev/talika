@@ -64,3 +64,9 @@ and how to [choose the right return shape](../guides/advanced/output-models.md#c
 !!! note "The names are literal"
     `parse()` means "give me the public parsed result." `parse_records()` means
     "give me the table records before public output conversion."
+
+!!! note "Record values remain assignable"
+    Schema declarations are frozen after compilation, but records returned by
+    `parse_records()` are not frozen in Talika 0.3. A caller may assign a
+    declared value after parsing. `table_source` cells and `table_extras`
+    remain read-only so diagnostics cannot lose their original provenance.

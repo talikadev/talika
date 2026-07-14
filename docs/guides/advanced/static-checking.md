@@ -30,8 +30,9 @@ parsed as an integer.
 !!! note "Static does not mean shallow"
     Static checking does not merely inspect labels. It runs the schema parser,
     field parsers, record validators, table validators, references, defaults,
-    and transformations. It deliberately uses `parse_records()`, so output
-    models and custom `build_output()` hooks do not run during checking.
+    and transformations. It deliberately uses `validate()`, so output models
+    and custom `build_output()` hooks do not run during checking, and every
+    returned item uses Diagnostic Model v1.
 
 ## Discover Feature Tables
 
@@ -87,10 +88,13 @@ the structured table error.
 ```
 
 `FeatureTable` represents one discovered step datatable. `FeatureDiagnostic`
-represents one table error attached back to the feature, scenario, and step
+represents one diagnostic attached back to the feature, scenario, and step
 that produced it. These objects are useful when you are building a custom
 checker, editor integration, or report generator and do not want to parse CLI
 text.
+
+`FeatureDiagnostic.error` remains the compatibility `TableError` adapter.
+`FeatureDiagnostic.diagnostic` exposes the shared immutable model directly.
 
 ```bash { .talika-terminal title="Readable table errors" .speed-3}
 --8<-- "docs_src/guides/advanced/static-checking.py:error-output"
@@ -138,9 +142,15 @@ Use JSON when another tool should consume the result.
 --8<-- "docs_src/guides/advanced/static-checking.py:json-output"
 ```
 
-The output is intentionally flat. Tools do not need to parse human text. They
-can read `code`, `path`, `row`, `column`, `message`, `hint`, and `value`
-directly.
+The JSON document has `format_version: 1`, status and matched-table counts,
+`error_count`, `warning_count`, and an ordered `diagnostics` array. Each item
+contains every Diagnostic Model v1 field plus `feature`, `scenario`, `step`,
+and the legacy `path`, `schema`, `field`, and `value` aliases.
+
+Presence flags distinguish absent values from explicit JSON `null`. Values are
+encoded deterministically: mapping keys and unordered containers are sorted,
+common standard-library values use stable strings, and unknown or cyclic
+objects expose stable type information rather than process-specific repr text.
 
 ## Pass Deterministic Context
 
@@ -168,7 +178,7 @@ that validators need while checking.
 The CLI returns conventional exit codes:
 
 - `0` when all matched tables are valid
-- `1` when one or more matched tables have diagnostics
+- `1` when one or more matched tables have error-severity diagnostics
 - `1` when setup or discovery fails, including missing/unreadable files,
   invalid Gherkin, schema-import failures, or context-factory failures
 - `2` when the filters match no tables
@@ -177,6 +187,9 @@ Operational failures are concise and traceback-free in text mode. JSON mode
 keeps the normal top-level shape with `status="failed"`, zero matched tables,
 one error, and nullable table-specific diagnostic fields. Invalid command
 syntax remains argparse exit code `2`.
+
+Warnings are included in checker output but do not produce exit code `1`.
+Talika 0.3 defines the warning channel without adding a built-in warning.
 
 When no tables match, the command prints:
 
