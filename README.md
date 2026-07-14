@@ -88,8 +88,8 @@ Start with a table that stays readable for everyone working on the scenario:
 ```gherkin
 Given the users exist
   | name  | age | roles              | active |
-  | Akash | 27  | Developer, Manager | yes    |
-  | Badal | 25  | Tester             | no     |
+  | Akash | 27  | Developer, Manager | true   |
+  | Badal | 25  | Tester             | false  |
 ```
 
 Describe what those cells mean:
@@ -153,7 +153,7 @@ one record—useful when each item has many attributes:
 | IDs       | 1       | 2       |
 | Type      | Article | Poll    |
 | Headline  | Hello   | Vote?   |
-| Published | yes     | no      |
+| Published | true    | false   |
 ```
 
 Both shapes use the same field declarations, parsers, validation hooks, output

@@ -1,15 +1,15 @@
 # --8<-- [start:feature]
 Given the users exist
   | name  | age | roles              | active |
-  | Akash | 27  | Developer, Manager | yes    |
-  | Badal | 25  | Tester             | no     |
+  | Akash | 27  | Developer, Manager | true   |
+  | Badal | 25  | Tester             | false  |
 # --8<-- [end:feature]
 
 # --8<-- [start:datatable]
 datatable = [
     ["name", "age", "roles", "active"],
-    ["Akash", "27", "Developer, Manager", "yes"],
-    ["Badal", "25", "Tester", "no"],
+    ["Akash", "27", "Developer, Manager", "true"],
+    ["Badal", "25", "Tester", "false"],
 ]
 # --8<-- [end:datatable]
 
@@ -48,8 +48,8 @@ class UserTable(RowTable):
 
 datatable = [
     ["name", "age", "roles", "active"],
-    ["Akash", "27", "Developer, Manager", "yes"],
-    ["Badal", "25", "Tester", "no"],
+    ["Akash", "27", "Developer, Manager", "true"],
+    ["Badal", "25", "Tester", "false"],
 ]
 
 users = UserTable.parse(datatable)
@@ -148,5 +148,5 @@ $ python users_table.py
 Table contains 3 errors:
   1. Required field has an empty value (code=empty_required, schema=UserTable, field='name', row=2, column=1, value=''). Hint: Fill the cell, or remove required=True if an explicit empty value should be valid.
   2. Field parser failed: invalid literal for int() with base 10: 'old' (code=parser_failed, schema=UserTable, field='age', row=2, column=2, value='old'). Hint: Check the cell value or adjust the field parser for this syntax.
-  3. Field parser failed: Expected one of ['0', '1', 'false', 'no', 'off', 'on', 'true', 'yes'] (code=parser_failed, schema=UserTable, field='active', row=2, column=4, value='maybe'). Hint: Check the cell value or adjust the field parser for this syntax.
+  3. Field parser failed: Expected one of ['false', 'true'] (code=parser_failed, schema=UserTable, field='active', row=2, column=4, value='maybe'). Hint: Check the cell value or adjust the field parser for this syntax.
 # --8<-- [end:collect-output]

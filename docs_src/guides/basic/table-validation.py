@@ -1,8 +1,8 @@
 # --8<-- [start:feature-basic]
 Given the user roster exists
   | email         | role   | primary |
-  | a@example.com | admin  | yes     |
-  | b@example.com | viewer | no      |
+  | a@example.com | admin  | true    |
+  | b@example.com | viewer | false   |
 # --8<-- [end:feature-basic]
 
 # --8<-- [start:basic-contract]
@@ -46,8 +46,8 @@ class UserRoster(RowTable):
 users = UserRoster.parse(
     [
         ["email", "role", "primary"],
-        ["a@example.com", "admin", "yes"],
-        ["b@example.com", "viewer", "no"],
+        ["a@example.com", "admin", "true"],
+        ["b@example.com", "viewer", "false"],
     ],
     context={"email_domain": "example.com"},
 )
@@ -68,8 +68,8 @@ assert users[1].primary is False
 UserRoster.parse(
     [
         ["email", "primary"],
-        ["a@example.com", "yes"],
-        ["a@example.com", "no"],
+        ["a@example.com", "true"],
+        ["a@example.com", "false"],
     ],
     context={"email_domain": "example.com"},
 )
@@ -86,8 +86,8 @@ Hint: Each user row must use a unique email address.
 UserRoster.parse(
     [
         ["email", "primary"],
-        ["a@example.com", "no"],
-        ["b@example.com", "no"],
+        ["a@example.com", "false"],
+        ["b@example.com", "false"],
     ],
     context={"email_domain": "example.com"},
 )
@@ -102,7 +102,7 @@ Table validation failed: At least one primary user is required
 UserRoster.parse(
     [
         ["email", "primary"],
-        ["a@other.test", "yes"],
+        ["a@other.test", "true"],
     ],
     context={"email_domain": "example.com"},
 )
@@ -174,7 +174,7 @@ Table validation failed: table policy unavailable
 Given the content schedule exists
   | IDs     | A-1     | P-1  |
   | Type    | Article | Poll |
-  | Publish | yes     | yes  |
+  | Publish | true    | true |
 # --8<-- [end:column-feature]
 
 # --8<-- [start:column-contract]
@@ -206,7 +206,7 @@ ContentSchedule.parse(
     [
         ["IDs", "A-1", "P-1"],
         ["Type", "Article", "Poll"],
-        ["Publish", "yes", "yes"],
+        ["Publish", "true", "true"],
     ],
     context={"publish_limit": 1},
 )
@@ -215,7 +215,7 @@ ContentSchedule.parse(
 # --8<-- [start:column-error-output]
 Only 1 item may be published in this scenario 
 (code=table_error, schema=ContentSchedule, field='Publish', 
-row=3, column=3, item_id='P-1', value='yes')
+row=3, column=3, item_id='P-1', value='true')
 # --8<-- [end:column-error-output]
 
 # --8<-- [start:reference-contract]

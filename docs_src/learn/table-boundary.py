@@ -22,7 +22,11 @@ from talika import RowTable, boolean, field
 class AccountHolderTable(RowTable):
     name = field("name", required=True)
     age: int = field("age", required=True)
-    verified = field("verified", parser=boolean(), default=False)
+    verified = field(
+        "verified",
+        parser=boolean(true_values=("yes",), false_values=("no",)),
+        default=False,
+    )
 
 
 holders = AccountHolderTable.parse(datatable)

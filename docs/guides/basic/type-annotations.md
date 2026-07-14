@@ -91,7 +91,7 @@ clear local meaning:
 
 The inferred parsers behave like the corresponding parser factories. For
 example, `int` uses integer conversion, `Decimal` uses decimal conversion, and
-`bool` accepts Talika's default boolean vocabulary.
+`bool` accepts only the case-insensitive default tokens `true` and `false`.
 
 If a value cannot be converted, the error still points to the authored cell:
 
@@ -105,8 +105,8 @@ If a value cannot be converted, the error still points to the authored cell:
 
 !!! warning "Boolean inference is strict"
     A `bool` annotation does not use Python truthiness. Values such as
-    `"maybe"` or `"disabled"` fail unless you provide an explicit parser with
-    that vocabulary.
+    `"maybe"`, `"yes"`, or `"disabled"` fail unless you provide an explicit
+    `boolean(true_values=..., false_values=...)` parser with that vocabulary.
 
 ## Enums and Literal Values
 

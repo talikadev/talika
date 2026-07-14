@@ -7,7 +7,7 @@ Given the users exist
 # --8<-- [start:new-table]
 Given the users exist
   | name     | age | active |
-  | Mira Rao | 34  | yes    |
+  | Mira Rao | 34  | true   |
 # --8<-- [end:new-table]
 
 # --8<-- [start:contract]

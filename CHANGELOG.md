@@ -4,6 +4,37 @@ All notable changes to this project are documented here. Until the first
 stable release, additions may refine APIs while preserving the documented
 `0.1` behavior whenever practical.
 
+## Unreleased
+
+### Breaking parser correction
+
+- Narrow the default `boolean()` vocabulary to `true` and `false`. Matching
+  remains case-insensitive, while `yes/no`, `1/0`, and `on/off` now require
+  explicit `true_values` and `false_values` declarations.
+- Apply the same strict vocabulary to parsers inferred from `bool`
+  annotations. Unknown tokens and whitespace-padded tokens continue to fail
+  with `parser_failed` instead of falling back to Python truthiness.
+- Reject bare-string token collections, non-string tokens, and non-Boolean
+  `case_sensitive` values when `boolean()` is configured, instead of iterating
+  or stringifying those values implicitly.
+
+### Introspection and documentation
+
+- Include the effective Boolean token sets and case-sensitivity policy in
+  `Schema.describe()` and `talika describe` parser descriptions.
+- Document explicit domain vocabularies, whitespace normalization through
+  parser composition, annotation behavior, and the migration from the former
+  convenience-token defaults.
+
+!!! warning "Migration"
+    A schema that intentionally accepts `yes/no`, `1/0`, or `on/off` should
+    declare those tokens explicitly. For example:
+
+    ```python
+    boolean(true_values=("yes", "1", "on"),
+            false_values=("no", "0", "off"))
+    ```
+
 ## 0.3.0
 
 Talika 0.3 compiles schema declarations into one immutable plan and moves

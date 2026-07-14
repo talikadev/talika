@@ -15,6 +15,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from .fields import MISSING, Field
+from .parsers import _configured_parser_description
 
 
 def _callable_name(value: Any) -> str | None:
@@ -24,7 +25,8 @@ def _callable_name(value: Any) -> str | None:
         value: Callable, object, ``None``, or ``MISSING`` sentinel.
 
     Returns:
-        ``None`` for absent values, otherwise a qualified/name/type fallback.
+        ``None`` for absent values, otherwise a stable Talika parser
+        description or a qualified/name/type fallback.
 
     !!! info
         The result is for diagnostics and schema descriptions, not for
@@ -33,6 +35,9 @@ def _callable_name(value: Any) -> str | None:
     """
     if value is None or value is MISSING:
         return None
+    parser_description = _configured_parser_description(value)
+    if parser_description is not None:
+        return parser_description
     return getattr(
         value, "__qualname__", getattr(value, "__name__", type(value).__name__)
     )

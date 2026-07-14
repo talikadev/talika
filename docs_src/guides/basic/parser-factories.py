@@ -44,12 +44,12 @@ ScalarParsers(username='alice', age=34, mask=255, rating=4.5, balance=Decimal('1
 # --8<-- [start:feature-boolean]
 Given the account states exist
   | default active | lifecycle active | strict active |
-  | yes            | enabled          | YES           |
-  | off            | inactive         | NO            |
+  | true           | enabled          | YES           |
+  | false          | inactive         | NO            |
 # --8<-- [end:feature-boolean]
 
 # --8<-- [start:boolean-contract]
-from talika import boolean
+from talika import boolean, compose
 
 
 class BooleanParsers(RowTable):
@@ -75,8 +75,8 @@ class BooleanParsers(RowTable):
 enabled, disabled = BooleanParsers.parse(
     [
         ["default active", "lifecycle active", "strict active"],
-        ["yes", "enabled", "YES"],
-        ["off", "inactive", "NO"],
+        ["true", "enabled", "YES"],
+        ["false", "inactive", "NO"],
     ]
 )
 
@@ -107,11 +107,38 @@ BooleanParsers.parse(
 # --8<-- [end:boolean-error]
 
 # --8<-- [start:boolean-error-output]
-Field parser failed: Expected one of ['0', '1', 'false', 'no', 'off', 'on', 'true', 'yes'] 
+Field parser failed: Expected one of ['false', 'true']
 (code=parser_failed, schema=BooleanParsers, field='default active', 
 row=2, column=1, value='maybe'). 
 Hint: Check the cell value or adjust the field parser for this syntax.
 # --8<-- [end:boolean-error-output]
+
+# --8<-- [start:boolean-whitespace]
+class PaddedBoolean(RowTable):
+    active = field(
+        "active",
+        parser=compose(string(strip=True), boolean()),
+    )
+
+
+record = PaddedBoolean.parse([["active"], [" true "]])[0]
+
+assert record.active is True
+# --8<-- [end:boolean-whitespace]
+
+# --8<-- [start:boolean-description]
+default_contract = BooleanParsers.describe().fields[0].parser
+lifecycle_contract = BooleanParsers.describe().fields[1].parser
+
+assert default_contract == (
+    "boolean(true_values=('true',), false_values=('false',), "
+    "case_sensitive=False)"
+)
+assert lifecycle_contract == (
+    "boolean(true_values=('active', 'enabled', 'y'), "
+    "false_values=('disabled', 'inactive', 'n'), case_sensitive=False)"
+)
+# --8<-- [end:boolean-description]
 
 # --8<-- [start:vocabulary-contract]
 from talika import choice, map_value
@@ -306,6 +333,7 @@ Hint: Check the cell value or adjust the field parser for this syntax.
 # --8<-- [start:configuration-errors]
 string(lower=True, upper=True)
 boolean(true_values=("yes",), false_values=("YES",))
+boolean(true_values="yes")
 choice()
 split("")
 compose()
@@ -314,6 +342,7 @@ compose()
 # --8<-- [start:configuration-errors-output]
 ValueError: string parser cannot enable both lower and upper
 ValueError: Boolean true and false values overlap: ['yes']
+TypeError: true_values must be a non-string iterable of strings
 ValueError: choice parser requires at least one allowed value
 ValueError: split separator cannot be empty
 ValueError: compose requires at least one parser

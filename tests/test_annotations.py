@@ -23,7 +23,7 @@ def test_annotations_infer_supported_scalar_parsers():
     record = TypedTable.parse(
         [
             ["count", "ratio", "price", "active", "status"],
-            ["3", "1.5", "12.30", "yes", "published"],
+            ["3", "1.5", "12.30", "true", "published"],
         ]
     )[0]
 
@@ -95,12 +95,20 @@ def test_one_unresolved_annotation_does_not_disable_other_inference():
         active = field("active")
 
     record = MixedTable.parse(
-        [["unavailable", "count", "active"], ["raw", "3", "yes"]]
+        [["unavailable", "count", "active"], ["raw", "3", "true"]]
     )[0]
 
     assert record.unavailable == "raw"
     assert record.count == 3
     assert record.active is True
+
+
+def test_inferred_boolean_uses_the_same_strict_default_vocabulary():
+    class TypedTable(RowTable):
+        active: bool = field("active")
+
+    with pytest.raises(TableError, match=r"Expected one of \['false', 'true'\]"):
+        TypedTable.parse([["active"], ["yes"]])
 
 
 def test_inherited_annotations_resolve_from_the_declaring_class():

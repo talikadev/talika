@@ -94,7 +94,10 @@ Python objects.
 
 5. `parser=boolean()`
 
-    Strictly converts tokens like "true", "false", "yes", "no" into a bool. Unknown values will raise a validation error   instead of relying on Python's truthiness.
+    Strictly converts `true` and `false` into a Boolean, using
+    case-insensitive matching by default. Other vocabularies must be declared
+    explicitly. Unknown values raise a validation error instead of relying on
+    Python's truthiness.
 
     `default=True`
 

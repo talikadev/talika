@@ -1,7 +1,7 @@
 # --8<-- [start:feature-basic]
 Given the users exist
   | age | rating | balance | active | status    | tier  | reviewer |
-  | 34  | 1.5    | 12.30   | yes    | published | staff |          |
+  | 34  | 1.5    | 12.30   | true   | published | staff |          |
 # --8<-- [end:feature-basic]
 
 # --8<-- [start:contract-basic]
@@ -31,7 +31,7 @@ class UserAnnotations(RowTable):
 users = UserAnnotations.parse(
     [
         ["age", "rating", "balance", "active", "status", "tier", "reviewer"],
-        ["34", "1.5", "12.30", "yes", "published", "staff", ""],
+        ["34", "1.5", "12.30", "true", "published", "staff", ""],
     ]
 )
 
@@ -66,7 +66,7 @@ class ProductAnnotations(RowTable):
 product = ProductAnnotations.parse(
     [
         ["quantity", "weight", "price", "available"],
-        ["3", "1.25", "19.99", "on"],
+        ["3", "1.25", "19.99", "true"],
     ]
 )[0]
 
@@ -86,7 +86,7 @@ ProductAnnotations.parse(
 # --8<-- [end:bool-error]
 
 # --8<-- [start:bool-error-output]
-Field parser failed: Expected one of ['0', '1', 'false', 'no', 'off', 'on', 'true', 'yes'] 
+Field parser failed: Expected one of ['false', 'true']
 (code=parser_failed, schema=ProductAnnotations, field='available', 
 row=2, column=1, value='maybe'). 
 Hint: Check the cell value or adjust the field parser for this syntax.
