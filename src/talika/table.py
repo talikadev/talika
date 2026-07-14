@@ -32,8 +32,8 @@ class TableCell:
     Attributes:
         value: The value currently consumed by schema parsing. A transformer
             may change this value.
-        source_row: One-based row number of the original BDD table cell.
-        source_column: One-based column number of the original BDD table cell.
+        source_row: One-based row number of the original Gherkin data table cell.
+        source_column: One-based column number of the original Gherkin data table cell.
         source_value: The exact value before any table transformation.
 
     A transformer may produce several cells from one source cell. Each new
@@ -67,7 +67,7 @@ class TableCell:
 
         !!! info
             One-based coordinates match feature-file diagnostics and user
-            expectations when reading BDD tables.
+            expectations when reading Gherkin data tables.
 
         """
         return cls(
@@ -108,7 +108,7 @@ class TableCell:
 
 @dataclass(frozen=True)
 class TableData:
-    """An immutable, source-aware representation of a BDD data table.
+    """An immutable, source-aware representation of a Gherkin data table.
 
     ``TableData`` intentionally provides only a few explicit operations. It is
     not a second table-processing framework. Its job is to carry current cell
@@ -131,7 +131,7 @@ class TableData:
         """Wrap ordinary string rows while recording source locations.
 
         Args:
-            rows: Raw BDD table rows, typically from pytest-bdd.
+            rows: Raw Gherkin data table rows, typically from pytest-bdd.
 
         Returns:
             A source-aware ``TableData`` instance.
@@ -196,7 +196,7 @@ class TableData:
     def cell(self, row: int, column: int) -> TableCell:
         """Return a cell using one-based row and column indexes.
 
-        One-based indexes match the coordinates shown in BDD table errors and
+        One-based indexes match the coordinates shown in Gherkin data table errors and
         make transformer code easier to compare with a feature file.
 
         Args:

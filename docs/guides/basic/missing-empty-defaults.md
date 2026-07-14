@@ -30,7 +30,7 @@ blank cell is authored data. A default is schema-owned data.
 
 ## The Field Parsing Lifecycle
 
-Whenever Talika processes a field in a BDD table, it evaluates the presence of the field label, default configurations, empty policies, parsers, and validators in a strict, predictable sequence:
+Whenever Talika processes a field in a Gherkin data table, it evaluates the presence of the field label, default configurations, empty policies, parsers, and validators in a strict, predictable sequence:
 
 1. **Label Presence Check**: Talika checks if the field's canonical label or any of its declared aliases appear in the table header for row tables, or in the field-label column for column tables.
     - *If absent*: Talika looks for a `default_factory`, then a `default`. If neither is declared, the field becomes `None`.

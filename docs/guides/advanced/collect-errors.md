@@ -241,7 +241,7 @@ Use collect mode when the table itself is being reviewed:
 - a command-line tool validates authored tables
 - an editor extension wants to underline several cells
 - a generated table needs human cleanup
-- a large BDD setup table should give authors a compact repair list
+- a large Gherkin data table should give authors a compact repair list
 
 In project tests, it is common to leave normal scenario execution in fail-fast
 mode and reserve collect mode for tooling-like checks. That keeps ordinary

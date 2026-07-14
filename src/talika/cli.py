@@ -1,4 +1,4 @@
-"""Command-line interface for static BDD table validation.
+"""Command-line interface for static Gherkin data table validation.
 
 The CLI exposes two operations: ``check`` validates Gherkin data tables against
 a schema without executing pytest scenarios, and ``describe`` renders a schema

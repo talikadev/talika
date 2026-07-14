@@ -1,4 +1,4 @@
-"""Row- and column-oriented BDD table schemas.
+"""Row- and column-oriented Gherkin data table schemas.
 
 This module owns the core parsing lifecycle: raw rows become source-aware
 ``TableData``, optional transformations run, labels are validated, field values

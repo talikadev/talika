@@ -1,399 +1,235 @@
-# talika
+<p align="center">
+  <a href="https://talikadev.github.io/talika/">
+    <img src="https://raw.githubusercontent.com/talikadev/talika/master/docs/assets/images/logotalpha_400.png" alt="Talika" width="400">
+  </a>
+</p>
 
-`talika` adds small, dataclass-style schemas to BDD data tables. It parses the
-raw list-of-lists supplied by tools such as `pytest-bdd`, validates the table
-shape, converts cells with project-defined parsers, and returns typed schema
-records.
+<p align="center">
+  <em>Talika — Hindi for tables.</em><br>
+  Declarative schemas for typed, validated Gherkin data tables.
+</p>
 
-It does not prescribe a table DSL or perform business actions. Projects define
-their own readable table vocabulary while `talika` handles the repeatable
-parts: shape validation, conversion, source-aware diagnostics, and optional
-static checks for `.feature` files.
+<p align="center">
+  <a href="https://github.com/talikadev/talika/actions/workflows/ci.yml"><img src="https://github.com/talikadev/talika/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://pypi.org/project/talika/"><img src="https://img.shields.io/pypi/v/talika?color=%2334D058&label=PyPI" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/talika/"><img src="https://img.shields.io/pypi/pyversions/talika.svg?color=%2334D058" alt="Supported Python versions"></a>
+  <a href="https://github.com/talikadev/talika/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/talika?color=%2334D058" alt="License"></a>
+  <a href="https://talikadev.github.io/talika/"><img src="https://img.shields.io/badge/docs-online-ef1266" alt="Documentation"></a>
+</p>
 
-## Links
+---
 
-- Documentation: <https://talikadev.github.io/talika/>
-- Source: <https://github.com/talikadev/talika>
-- Issues: <https://github.com/talikadev/talika/issues>
-- PyPI: <https://pypi.org/project/talika/>
+Gherkin data tables are wonderfully easy to read. The raw `list[list[str]]` that
+arrives in Python is less wonderful to maintain.
+
+As a test suite grows, step definitions accumulate the same invisible work:
+matching labels, converting strings, applying defaults, rejecting typos, and
+explaining which cell was wrong. Talika moves that work into a small, reusable
+table contract.
+
+Define the shape once. Talika parses the table, converts its cells into real
+Python values, validates the result, and keeps errors connected to the original
+`.feature` file.
+
+<p align="center">
+  <strong><a href="https://talikadev.github.io/talika/start/quickstart/">Quickstart</a></strong>
+  ·
+  <strong><a href="https://talikadev.github.io/talika/start/why/">Why Talika?</a></strong>
+  ·
+  <strong><a href="https://talikadev.github.io/talika/reference/">API reference</a></strong>
+</p>
+
+## What you get
+
+- **Declarative table contracts** — describe labels, required fields, aliases,
+  defaults, and parsing rules in one Python class.
+- **Typed records** — turn cells into `int`, `bool`, `Decimal`, enums, lists,
+  and your own domain values.
+- **Both natural table shapes** — use row-oriented tables for lists and
+  column-oriented tables for detailed items.
+- **Errors where the data lives** — report stable error codes with the field,
+  row, column, item ID, and original value.
+- **Your team's vocabulary** — build readable cell conventions such as
+  `random`, `today`, or `20 words` with tokens and full-match patterns.
+- **Room for real test suites** — model variants, references, table transforms,
+  cross-record validation, and dataclass or Pydantic output.
+- **Checks before test execution** — validate Gherkin tables in CI with the
+  optional `talika check` CLI.
+- **A zero-dependency core** — install integrations only when you need them.
 
 ## Installation
 
-`talika` supports Python 3.10 and newer. The core package has no runtime
-dependencies:
+Talika supports Python 3.10 and newer.
 
 ```bash
 pip install talika
 ```
 
-Install optional extras only for integrations you use:
+Or with `uv`:
 
 ```bash
-pip install "talika[cli]"       # static Gherkin feature-file checks
-pip install "talika[pydantic]"  # Pydantic output models
-pip install "talika[test]"      # test/integration dependencies
+uv add talika
 ```
 
-The command-line tool is available as both `talika` and `python -m talika`.
+Optional extras keep the core package small:
 
-## Quick Start
+```bash
+pip install "talika[cli]"       # Static checks for .feature files
+pip install "talika[pydantic]"  # Pydantic v2 output models
+```
+
+See the [installation guide](https://talikadev.github.io/talika/start/install/)
+for environment setup and all available extras.
+
+## A table contract in a few lines
+
+Start with a table that stays readable for everyone working on the scenario:
+
+```gherkin
+Given the users exist
+  | name  | age | roles              | active |
+  | Akash | 27  | Developer, Manager | yes    |
+  | Badal | 25  | Tester             | no     |
+```
+
+Describe what those cells mean:
 
 ```python
-from talika import RowTable, field
-
-
-def parse_bool(value, context):
-    return value.lower() == "true"
+from talika import RowTable, boolean, field, split
 
 
 class UserTable(RowTable):
     name = field("name", required=True)
-    role = field("role", required=True)
-    active = field("active", parser=parse_bool, default=True)
+    age: int = field("age", required=True)
+    roles = field("roles", parser=split(","))
+    active = field("active", parser=boolean(), default=True)
+```
+
+Then parse at the boundary of your step:
+
+```python
+from pytest_bdd import given
 
 
-users = UserTable.parse(
-    [
-        ["name", "role", "active"],
-        ["Alice", "admin", "true"],
-    ]
-)
+@given("the users exist", target_fixture="users")
+def users(datatable):
+    return UserTable.parse(datatable)
+```
 
-assert users[0].name == "Alice"
+Your test now receives useful Python values instead of table-shaped strings:
+
+```python
+assert users[0].name == "Akash"
+assert users[0].age == 27
+assert users[0].roles == ["Developer", "Manager"]
 assert users[0].active is True
 ```
 
-## Table Shapes
+Bad input fails at the table boundary with source-aware diagnostics:
 
-Row-oriented tables use the first row as labels and every following row as one
-record:
-
-```python
-from talika import RowTable, field
-
-
-class ProductTable(RowTable):
-    sku = field("sku", required=True)
-    name = field("name", required=True)
+```text
+Field parser failed: invalid literal for int() with base 10: 'old'
+(code=parser_failed, schema=UserTable, field='age', row=2, column=2, value='old').
 ```
 
-Column-oriented tables use the first column as labels and every following
-column as one record:
+The [quickstart](https://talikadev.github.io/talika/start/quickstart/) walks
+through defaults, collected errors, source metadata, and the `pytest-bdd`
+fixture.
 
-```python
-from talika import ColumnTable, field, id_field
+## Tables can have different shapes
 
+`RowTable` treats the first row as labels and each following row as one record:
 
-class ContentTable(ColumnTable):
-    id = id_field("IDs")
-    content_type = field("Type*", required=True)
-    headline = field("Headline*", required=True)
-    category = field("Category")
-
-
-items = ContentTable.parse(
-    [
-        ["IDs", "1", "2"],
-        ["Type*", "Article", "Poll"],
-        ["Headline*", "Hello", "QA Poll"],
-    ]
-)
-
-assert items[0].id == "1"
-assert items[1].content_type == "Poll"
-assert items[0].category is None
+```gherkin
+| name  | role  |
+| Akash | admin |
+| Badal | user  |
 ```
 
-Use `parse_records()` when you specifically want schema instances for static
-typing or when a schema has an `output_model` but a test needs the intermediate
-validated record:
+`ColumnTable` treats the first column as labels and each following column as
+one record—useful when each item has many attributes:
 
-```python
-records: list[ContentTable] = ContentTable.parse_records(datatable)
+```gherkin
+| IDs       | 1       | 2       |
+| Type      | Article | Poll    |
+| Headline  | Hello   | Vote?   |
+| Published | yes     | no      |
 ```
 
-Functional helpers are also available:
+Both shapes use the same field declarations, parsers, validation hooks, output
+models, and source-aware errors. Read
+[choosing a table shape](https://talikadev.github.io/talika/learn/choosing-table-shape/)
+for the trade-offs.
+
+## Make tables speak your domain
+
+Talika does not impose a universal table DSL. It gives your project safe hooks
+to own its vocabulary:
 
 ```python
-from talika import parse_table, parse_table_records
-
-items = parse_table(ContentTable, datatable)
-records = parse_table_records(ContentTable, datatable)
-```
-
-## Conversion
-
-Common field conversion does not require custom functions:
-
-```python
-from talika import RowTable, boolean, compose, decimal, each, field, split, string
+from talika import CellDSL
 
 
-class ProductTable(RowTable):
-    price = field("price", parser=decimal())
-    active = field("active", parser=boolean())
-    tags = field("tags", parser=compose(split(","), each(string(strip=True))))
-```
-
-The package provides `string`, `integer`, `floating`, `decimal`, `boolean`,
-`choice`, `split`, `map_value`, `optional`, `compose`, and `each`.
-
-Supported annotations infer a parser when the field has no explicit parser:
-
-```python
-class UserTable(RowTable):
-    name: str = field("name")
-    age: int | None = field("age")
-    active: bool = field("active")
-```
-
-Inference supports `str`, `int`, `float`, `bool`, `Decimal`, enums, string
-`Literal` values, and simple optionals. Collection annotations such as
-`list[str]` do not imply a cell syntax; use an explicit parser such as
-`split(",")` when one cell should become several values.
-
-## Defaults, Aliases, And Policies
-
-Missing optional fields can use static defaults or context-aware factories:
-
-```python
-headline = field(
-    "Headline",
-    default_factory=lambda context: (
-        context.user_data["generator"].headline(context.item_id)
-    ),
-)
-```
-
-Aliases support intentional wording changes:
-
-```python
-headline = field("Headline", aliases=("Title", "Name"))
-```
-
-Unknown fields currently accept only the default `unknown_fields = "forbid"`
-policy. Discriminated schemas also support `inapplicable_fields = "forbid"`
-and `inapplicable_fields = "preserve"` for variant-specific values.
-
-## Variants
-
-Variants let one BDD table contain several related record shapes. The base
-schema declares shared fields and a discriminator used to select the applicable
-fields and behavior.
-
-```python
-from talika import ColumnTable, TableFields, discriminator, field, id_field, split
+cells = CellDSL()
 
 
-class ArticleFields(TableFields):
-    body = field("Body*", required=True)
+@cells.token("random", fields=("headline",))
+def random_headline(context):
+    return context.user_data["faker"].headline()
 
 
-class PollFields(TableFields):
-    options: list[str] = field("Options*", required=True, parser=split(","))
-
-
-class ContentTable(ColumnTable):
-    id = id_field("IDs")
-    content_type = discriminator(
-        "Type*",
-        variants={
-            "Article": ArticleFields,
-            "Poll": PollFields,
-        },
-    )
-    headline = field("Headline*", required=True)
-```
-
-The explicit decorator form is also available with `discriminator_field()` and
-`@ContentTable.variant(...)`.
-
-## Custom Cell Syntax
-
-`CellDSL` groups exact tokens and full-match regular-expression rules into a
-reusable field parser. The package owns dispatch; your project owns the
-meaning.
-
-```python
-from talika import CellDSL, ColumnTable, field, id_field
-
-content_cells = CellDSL()
-
-
-@content_cells.token("random")
-def random_value(context):
-    return context.user_data["generator"].random_for(context.field_name)
-
-
-@content_cells.pattern(r"(?P<count>\d+):word")
+@cells.pattern(r"(?P<count>\d+) words", fields=("body",))
 def generated_words(match, context):
-    count = int(match["count"])
-    return context.user_data["generator"].words(count)
-
-
-class ContentTable(ColumnTable):
-    id = id_field("IDs")
-    headline = field("Headline*", required=True, parser=content_cells)
+    return context.user_data["faker"].words(int(match["count"]))
 ```
 
-Exact tokens run before patterns. Patterns are tried in registration order and
-must match the whole cell. Values that match no rule pass through unchanged.
-Rules may be scoped by schema attribute name, and several DSLs may be composed
-with `compose_cell_dsls(...)`.
+Feature authors can write compact intent such as `random` or `20 words`, while
+the project decides exactly what those phrases mean. Explore
+[tokens](https://talikadev.github.io/talika/guides/advanced/cell-dsl-tokens/),
+[patterns](https://talikadev.github.io/talika/guides/advanced/cell-dsl-patterns/),
+and [composition](https://talikadev.github.io/talika/guides/advanced/cell-dsl-composition/).
 
-## Validation And Diagnostics
+## Check feature files without running scenarios
 
-Override `validate_record()` to check rules involving one parsed record:
+Install the CLI extra and validate tables during local development or CI:
 
-```python
-class ContentTable(ColumnTable):
-    id = id_field("IDs")
-    content_type = field("Type*", required=True)
-    headline = field("Headline*", required=True)
-
-    def validate_record(self, context):
-        if self.content_type == "Poll" and not self.headline.endswith("?"):
-            raise ValueError("Poll headlines must end with a question mark")
-```
-
-Use `validate_records()` for relationships involving several records. Failures
-become `TableError` instances with stable error codes and source coordinates.
-In collect mode, independent diagnostics are grouped into `TableErrors`:
-
-```python
-from talika import TableErrors
-
-try:
-    ContentTable.parse(datatable, error_mode="collect")
-except TableErrors as errors:
-    for error in errors:
-        print(error.code, error.row, error.column, error.message)
-```
-
-Schema records expose immutable source metadata:
-
-```python
-record.table_source.row
-record.table_source.column
-record.table_source.item_id
-record.source_for("headline")
-```
-
-## Output Models
-
-Set `output_model` to return project objects after schema and table validation:
-
-```python
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class User:
-    name: str
-    age: int
-
-
-class UserTable(RowTable):
-    output_model = User
-
-    name = field("name")
-    age: int = field("age")
-```
-
-Dataclasses and other keyword-constructed classes need no integration
-dependency. Pydantic v2 works through the optional `talika[pydantic]` extra.
-Override `build_output(record, context)` when construction needs a custom
-signature, selected fields, source metadata, or project services.
-
-## Table Transformations
-
-`ColumnGroupExpander` handles a common compact table convention where one
-source column describes one item or a group of items:
-
-```python
-from talika import ColumnGroupExpander, NumericRange, PrefixRepeat
-
-
-class ContentTable(ColumnTable):
-    table_transformer = ColumnGroupExpander(
-        key_row="IDs",
-        range_rule=NumericRange(separator=".."),
-        repeat_rule=PrefixRepeat(separator=":"),
-    )
-
-    id = id_field("IDs")
-    content_type = field("Type*", required=True)
-```
-
-Projects can also implement compatible `RangeRule` and `RepeatRule` objects or
-override `transform_table()` for table syntax that does not fit the reusable
-grouped-column shape.
-
-## pytest Integration
-
-Installing the package registers a `talika` fixture:
-
-```python
-def content_exists(datatable, talika, faker):
-    return talika.parse(
-        datatable,
-        schema=ContentTable,
-        context={"faker": faker},
-    )
-```
-
-The fixture also exposes `parse_records()` for type-checker-friendly schema
-records.
-
-## Static Feature Checking
-
-Install the optional CLI extra to validate feature tables without executing
-pytest scenarios:
-
-```powershell
+```bash
 pip install "talika[cli]"
-talika check features/content.feature `
-  --schema tests/support/content_schema.py:ContentTable `
-  --step "the following content exists:"
+talika check features/users.feature --schema tests.tables:UserTable --step "the users exist"
 ```
 
-Machine-readable diagnostics are available for CI and editor integrations:
+The checker uses the official Gherkin parser and can emit JSON diagnostics for
+editor and CI integrations. See the
+[static checking guide](https://talikadev.github.io/talika/guides/advanced/static-checking/)
+for discovery, context factories, and exit codes.
 
-```powershell
-talika check features/content.feature `
-  --schema tests/support/content_schema.py:ContentTable `
-  --step "the following content exists:" `
-  --format json
-```
+## Where Talika fits
 
-Use `describe` to inspect a schema without parsing a feature file:
+Talika is deliberately focused. It is not a test runner, fixture factory,
+business workflow engine, or general model-validation library.
 
-```powershell
-talika describe tests/support/content_schema.py:ContentTable
-talika describe tests/support/content_schema.py:ContentTable --format json
-```
+`pytest-bdd` still runs scenarios. Pydantic can still validate final models.
+Factories can still build database objects. Talika owns the boundary between a
+human-authored data table and the Python objects your test code wants to use.
 
-The checker uses the official Gherkin parser and reports exact feature-file
-coordinates. Importable `module:Schema` references are also supported. Use
-`--context-factory module:function` for deterministic parser dependencies.
-Scenario-outline substitutions are not expanded.
+## Learn more
 
-## Development
+- [Why Talika?](https://talikadev.github.io/talika/start/why/) — the problem it
+  solves and how it compares with adjacent tools.
+- [Quickstart](https://talikadev.github.io/talika/start/quickstart/) — build and
+  use your first schema.
+- [Guides](https://talikadev.github.io/talika/guides/basic/row-tables/) — fields,
+  parsers, validation, variants, references, transforms, and more.
+- [API reference](https://talikadev.github.io/talika/reference/) — the complete
+  public interface.
+- [Changelog](https://github.com/talikadev/talika/blob/master/CHANGELOG.md) —
+  releases and notable changes.
 
-```powershell
-uv sync --all-extras --dev
-uv run pytest -p no:cacheprovider
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src tests/typing/public_api.py
-uv build
-```
+## Contributing
 
-The documentation site is built with Zensical:
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the local
+development workflow and project checks.
 
-```powershell
-uv run --group docs zensical build --strict
-```
+## License
 
-GitHub Pages is configured for <https://talikadev.github.io/talika/> through
-the `Docs` workflow in `.github/workflows/docs.yml`.
+Talika is released under the [MIT License](LICENSE).

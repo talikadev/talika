@@ -1,7 +1,7 @@
 """Schema field declarations.
 
 Field declarations are descriptors collected by the schema metaclass. They
-describe how BDD table labels map to Python attributes, which values are
+describe how Gherkin data table labels map to Python attributes, which values are
 required, and how raw cell text should be converted.
 
 !!! info
@@ -49,7 +49,7 @@ class Field:
     """Store one declared schema field and its conversion behavior.
 
     Attributes:
-        label: Canonical BDD table label.
+        label: Canonical Gherkin data table label.
         aliases: Alternate accepted labels for evolving feature vocabulary.
         required: Whether the field must be present and non-empty.
         default: Static value used when an optional field is absent.
@@ -245,7 +245,7 @@ def field(
     objects may opt into empty-cell handling by exposing ``parse_empty=True``.
 
     Args:
-        label: Canonical BDD table label.
+        label: Canonical Gherkin data table label.
         required: Whether the field must be present and non-empty.
         default: Static value used when the entire field is absent.
         default_factory: Factory called for an absent optional field.

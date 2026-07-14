@@ -69,12 +69,12 @@ class CellContext:
 
     ``value`` is passed separately to a field parser and represents the
     current, possibly transformed value. ``source_value`` records what was
-    written in the original BDD table before table transformation.
+    written in the original Gherkin data table before table transformation.
 
     Attributes:
         schema: Concrete schema class parsing the cell.
         field_name: Python attribute name receiving the parsed value.
-        field_label: Canonical BDD table label for the field.
+        field_label: Canonical Gherkin data table label for the field.
         row: One-based source row when available.
         column: One-based source column when available.
         item_id: Parsed record ID when available.
@@ -103,14 +103,14 @@ class DefaultContext:
     """Context supplied when a missing optional field uses a factory.
 
     Default factories do not have a source cell because the field was omitted
-    from the BDD table. They still receive the selected schema, field identity,
+    from the Gherkin data table. They still receive the selected schema, field identity,
     item ID when available, and the same read-only project data supplied to the
     parse operation.
 
     Attributes:
         schema: Concrete schema class building the default.
         field_name: Python attribute name receiving the default.
-        field_label: Canonical BDD table label for the field.
+        field_label: Canonical Gherkin data table label for the field.
         item_id: Parsed record ID when available.
         user_data: Read-only project data from ``ParseContext``.
 
