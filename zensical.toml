@@ -22,7 +22,7 @@ nav = [
     {"Quickstart" = "start/quickstart.md"},
   ]},
   {"Learn" = [
-    {"Gherkin Data Tables" = "learn/datatables.md"},
+    {"BDD Data Tables" = "learn/datatables.md"},
     {"The Table Boundary" = "learn/table-boundary.md"},
     {"Tables As Contracts" = "learn/table-contracts.md"},
     {"Choosing A Table Shape" = "learn/choosing-table-shape.md"},
@@ -134,19 +134,20 @@ toggle.name = "Switch to light mode"
 
 [[project.theme.palette]]
 accent = "talika-accent"
-media = "(prefers-color-scheme: light)"
-primary = "amber"
-toggle.icon = "lucide/sun"
-toggle.name = "Switch to dark mode"
-
-[[project.theme.palette]]
-accent = "talika-accent"
 media = "(prefers-color-scheme: dark)"
 primary = "amber"
-scheme = "default"
 scheme = "slate"
 toggle.icon = "lucide/moon-star"
 toggle.name = "Switch to system preference"
+
+[[project.theme.palette]]
+accent = "talika-accent"
+media = "(prefers-color-scheme: light)"
+primary = "amber"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
 
 [project.theme.icon]
 repo = "material/github"
