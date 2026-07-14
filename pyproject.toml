@@ -1,6 +1,6 @@
 [project]
 name = "talika"
-version = "0.1.1"
+version = "0.2.0"
 description = "Typed, validated schemas for Gherkin data tables"
 readme = "README.md"
 license = "MIT"
@@ -43,6 +43,7 @@ test = [
     "pydantic>=2.0",
     "pytest>=8.0",
     "pytest-bdd>=8.0",
+    "pytest-cov>=6.0",
 ]
 
 [project.scripts]
@@ -55,6 +56,7 @@ dev = [
     "pydantic>=2.0",
     "pytest>=8.0",
     "pytest-bdd>=8.0",
+    "pytest-cov>=6.0",
     "ruff>=0.11",
 ]
 docs = [
@@ -87,6 +89,15 @@ include = [
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["talika"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
 
 [tool.ruff]
 line-length = 88

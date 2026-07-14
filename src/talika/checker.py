@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .errors import TableError, TableErrors
+from .errors import TableError, TableErrorCode, TableErrors
 from .schema import BaseTable
 from .table import TableCell, TableData
 
@@ -70,14 +70,14 @@ class FeatureDiagnostic:
     error: TableError
 
 
-def _gherkin_parser() -> Any:
-    """Load the optional official Gherkin parser.
+def _gherkin_tools() -> tuple[Any, Any]:
+    """Load the optional official Gherkin parser and pickle compiler.
 
     Returns:
-        The Gherkin ``Parser`` class.
+        The Gherkin ``Parser`` and ``Compiler`` classes.
 
     Raises:
-        RuntimeError: If the optional ``cli`` dependency is not installed.
+        TableError: If the optional ``cli`` dependency is not installed.
 
     !!! warning
         This dependency is intentionally lazy so core table parsing has no
@@ -86,11 +86,13 @@ def _gherkin_parser() -> Any:
     """
     try:
         from gherkin.parser import Parser  # type: ignore[import-untyped]
+        from gherkin.pickles.compiler import Compiler  # type: ignore[import-untyped]
     except ImportError as exc:
-        raise RuntimeError(
-            "Feature checking requires the 'cli' extra: pip install 'talika[cli]'"
+        raise TableError(
+            "Feature checking requires the 'cli' extra: pip install 'talika[cli]'",
+            code=TableErrorCode.CHECKER_FAILED,
         ) from exc
-    return Parser
+    return Parser, Compiler
 
 
 def _table_data(data_table: Mapping[str, Any]) -> TableData:
@@ -133,9 +135,9 @@ def _scenario_nodes(feature: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
     Yields:
         Scenario or background mappings, including nodes nested inside rules.
 
-    !!! warning
-        Scenario-outline example expansion is not performed here. Static table
-        checking inspects the table text present in the feature AST.
+    !!! info
+        Outline expansion is handled separately with the official Gherkin
+        compiler after this traversal identifies the original scenario node.
 
     """
     for child in feature.get("children", []):
@@ -145,6 +147,122 @@ def _scenario_nodes(feature: Mapping[str, Any]) -> Iterable[Mapping[str, Any]]:
             yield child["background"]
         elif "rule" in child:
             yield from _scenario_nodes(child["rule"])
+
+
+def _example_cells(
+    scenario_node: Mapping[str, Any],
+) -> dict[str, dict[str, Mapping[str, Any]]]:
+    """Map each Examples body-row ID to its parameter source cells."""
+    mapped: dict[str, dict[str, Mapping[str, Any]]] = {}
+    for examples in scenario_node.get("examples", []):
+        header = examples.get("tableHeader")
+        if not header:
+            continue
+        names = [cell["value"] for cell in header.get("cells", [])]
+        for row in examples.get("tableBody", []):
+            mapped[row["id"]] = dict(zip(names, row.get("cells", []), strict=False))
+    return mapped
+
+
+def _compiled_table_data(
+    source_table: Mapping[str, Any],
+    compiled_table: Mapping[str, Any],
+    parameters: Mapping[str, Mapping[str, Any]],
+) -> TableData:
+    """Combine compiled logical values with precise AST source locations."""
+    rows: list[list[TableCell]] = []
+    for source_row, compiled_row in zip(
+        source_table["rows"], compiled_table["rows"], strict=True
+    ):
+        cells: list[TableCell] = []
+        for source_cell, compiled_cell in zip(
+            source_row["cells"], compiled_row["cells"], strict=True
+        ):
+            source_value = source_cell["value"]
+            parameter_name = (
+                source_value[1:-1]
+                if source_value.startswith("<")
+                and source_value.endswith(">")
+                and source_value.count("<") == 1
+                and source_value.count(">") == 1
+                else None
+            )
+            effective_source = (
+                parameters.get(parameter_name, source_cell)
+                if parameter_name is not None
+                else source_cell
+            )
+            location = effective_source["location"]
+            cells.append(
+                TableCell(
+                    value=compiled_cell["value"],
+                    source_row=location["line"],
+                    source_column=location["column"],
+                    source_value=effective_source["value"],
+                )
+            )
+        rows.append(cells)
+    return TableData.from_cells(rows)
+
+
+def _outline_tables(
+    *,
+    source_path: Path,
+    feature_name: str,
+    scenario_node: Mapping[str, Any],
+    pickles: Iterable[Mapping[str, Any]],
+    step_filter: str | None,
+) -> list[FeatureTable]:
+    """Expand one scenario outline into logical feature tables."""
+    scenario_id = scenario_node["id"]
+    example_rows = _example_cells(scenario_node)
+    source_steps = {step["id"]: step for step in scenario_node.get("steps", [])}
+    discovered: list[FeatureTable] = []
+    for pickle in pickles:
+        ast_ids = pickle.get("astNodeIds", [])
+        if scenario_id not in ast_ids:
+            continue
+        example_id = next(
+            (node_id for node_id in ast_ids if node_id in example_rows), None
+        )
+        if example_id is None:
+            continue
+        parameters = example_rows[example_id]
+        for compiled_step in pickle.get("steps", []):
+            step_id = next(
+                (
+                    node_id
+                    for node_id in compiled_step.get("astNodeIds", [])
+                    if node_id in source_steps
+                ),
+                None,
+            )
+            if step_id is None:
+                continue
+            source_step = source_steps[step_id]
+            source_table = source_step.get("dataTable")
+            compiled_table = compiled_step.get("argument", {}).get("dataTable")
+            step_text = source_step.get("text", "")
+            if (
+                source_table is None
+                or compiled_table is None
+                or (step_filter is not None and step_text != step_filter)
+            ):
+                continue
+            discovered.append(
+                FeatureTable(
+                    path=source_path,
+                    feature=feature_name,
+                    scenario=scenario_node.get("name", ""),
+                    step=step_text,
+                    table=_compiled_table_data(
+                        source_table,
+                        compiled_table,
+                        parameters,
+                    ),
+                )
+            )
+    return discovered
 
 
 def discover_feature_tables(
@@ -164,7 +282,7 @@ def discover_feature_tables(
         Matching ``FeatureTable`` objects.
 
     Raises:
-        RuntimeError: If the optional Gherkin dependency is unavailable.
+        TableError: If discovery cannot read or compile the feature file.
 
     !!! example
         ```python
@@ -173,8 +291,18 @@ def discover_feature_tables(
 
     """
     source_path = Path(path)
-    Parser = _gherkin_parser()
-    document = Parser().parse(source_path.read_text(encoding="utf-8"))
+    try:
+        Parser, Compiler = _gherkin_tools()
+        document = Parser().parse(source_path.read_text(encoding="utf-8"))
+        document["uri"] = str(source_path)
+        pickles = Compiler().compile(document)
+    except TableError:
+        raise
+    except Exception as exc:
+        raise TableError(
+            f"Feature discovery failed for {source_path}: {exc}",
+            code=TableErrorCode.CHECKER_FAILED,
+        ) from exc
     feature = document.get("feature")
     if feature is None:
         return []
@@ -183,6 +311,17 @@ def discover_feature_tables(
     for scenario_node in _scenario_nodes(feature):
         scenario_name = scenario_node.get("name", "")
         if scenario is not None and scenario_name != scenario:
+            continue
+        if scenario_node.get("examples"):
+            discovered.extend(
+                _outline_tables(
+                    source_path=source_path,
+                    feature_name=feature.get("name", ""),
+                    scenario_node=scenario_node,
+                    pickles=pickles,
+                    step_filter=step,
+                )
+            )
             continue
         for step_node in scenario_node.get("steps", []):
             data_table = step_node.get("dataTable")
@@ -262,7 +401,7 @@ def check_feature_tables(
     diagnostics: list[FeatureDiagnostic] = []
     for discovered in tables:
         try:
-            schema.parse(
+            schema.parse_records(
                 discovered.table,
                 context=context,
                 error_mode="collect",

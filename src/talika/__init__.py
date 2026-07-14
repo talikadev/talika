@@ -72,7 +72,7 @@ from .transformers import (
 try:
     __version__ = version("talika")
 except PackageNotFoundError:
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
 
 __all__ = [
     "TableError",

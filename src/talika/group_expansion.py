@@ -21,8 +21,14 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .context import ParseContext
-from .errors import TableError
+from .errors import TableError, TableErrorCode
 from .table import TableCell, TableData
+
+_MAX_NUMERIC_RANGE_KEYS = 10_000
+
+
+class _ExpansionLimitError(ValueError):
+    """Signal that a built-in expansion exceeded its private safety bound."""
 
 
 class RangeRule(Protocol):
@@ -175,6 +181,13 @@ class NumericRange:
 
         if start > end:
             raise ValueError("Numeric range must be ascending")
+
+        key_count = end - start + 1
+        if key_count > _MAX_NUMERIC_RANGE_KEYS:
+            raise _ExpansionLimitError(
+                "Numeric range expands to "
+                f"{key_count} keys; the maximum is {_MAX_NUMERIC_RANGE_KEYS}"
+            )
 
         return [cell.with_value(str(value)) for value in range(start, end + 1)]
 
@@ -542,6 +555,13 @@ class ColumnGroupExpander:
             cells = list(self.range_rule.expand(cell, context))
         except TableError:
             raise
+        except _ExpansionLimitError as exc:
+            raise TableError.from_cell(
+                str(exc),
+                cell,
+                schema=schema,
+                code=TableErrorCode.EXPANSION_LIMIT,
+            ) from exc
         except Exception as exc:
             raise TableError.from_cell(
                 f"Range expansion failed: {exc}",

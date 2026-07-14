@@ -81,3 +81,43 @@ def test_inferred_parser_errors_keep_cell_location():
 
     assert error.value.row == 2
     assert error.value.column == 1
+
+
+def test_one_unresolved_annotation_does_not_disable_other_inference():
+    class MixedTable(RowTable):
+        __annotations__ = {
+            "unavailable": "UnavailableDomainType",
+            "count": int,
+            "active": bool,
+        }
+        unavailable = field("unavailable")
+        count = field("count")
+        active = field("active")
+
+    record = MixedTable.parse(
+        [["unavailable", "count", "active"], ["raw", "3", "yes"]]
+    )[0]
+
+    assert record.unavailable == "raw"
+    assert record.count == 3
+    assert record.active is True
+
+
+def test_inherited_annotations_resolve_from_the_declaring_class():
+    class BaseTypedRows(RowTable):
+        count: int = field("count")
+
+    class TypedRows(BaseTypedRows):
+        name = field("name")
+
+    record = TypedRows.parse([["count", "name"], ["7", "item"]])[0]
+
+    assert record.count == 7
+
+
+def test_explicit_parser_skips_an_unresolvable_annotation():
+    class ExplicitTable(RowTable):
+        __annotations__ = {"value": "UnavailableDomainType"}
+        value = field("value", parser=lambda value, context: value.upper())
+
+    assert ExplicitTable.parse([["value"], ["kept"]])[0].value == "KEPT"

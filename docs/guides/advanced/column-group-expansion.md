@@ -78,6 +78,11 @@ Range rules work on the key row:
 - `NumericRange("..")` supports values such as `1..3`
 - `AlphabeticRange("-")` supports values such as `A-C`
 
+`NumericRange` currently allows at most 10,000 generated keys from one compact
+cell. Exactly 10,000 is allowed; a larger range fails before allocation with
+`expansion_limit` at the compact source cell. This is a private stabilization
+guard rather than a configurable public limits API.
+
 Repeat rules work on the value rows:
 
 - `PrefixRepeat(":")` supports values such as `3:Article`

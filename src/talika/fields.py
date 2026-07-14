@@ -12,7 +12,14 @@ required, and how raw cell text should be converted.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import (
+    Callable,
+    Mapping,
+    MutableMapping,
+    MutableSequence,
+    MutableSet,
+    Sequence,
+)
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
@@ -186,6 +193,7 @@ def _validate_field_options(
     required: bool,
     default: Any,
     default_factory: DefaultFactory | object,
+    parser: Parser | None = None,
     empty: str = "raw",
 ) -> tuple[str, ...]:
     """Validate declaration options shared by field constructors.
@@ -196,6 +204,7 @@ def _validate_field_options(
         required: Whether a value is required.
         default: Static default value or ``MISSING``.
         default_factory: Context-aware default factory or ``MISSING``.
+        parser: Optional value parser.
         empty: Explicit empty-cell policy.
 
     Returns:
@@ -210,9 +219,17 @@ def _validate_field_options(
         table data appear valid.
 
     """
+    if not isinstance(label, str):
+        raise TypeError("field label must be a string")
     if not label:
         raise ValueError("field label cannot be empty")
+    if isinstance(aliases, (str, bytes, bytearray)) or not isinstance(
+        aliases, Sequence
+    ):
+        raise TypeError("field aliases must be a non-string sequence of strings")
     normalized = tuple(aliases)
+    if any(not isinstance(alias, str) for alias in normalized):
+        raise TypeError("field aliases must be strings")
     if any(not alias for alias in normalized):
         raise ValueError("field aliases cannot be empty")
     if label in normalized or len(set(normalized)) != len(normalized):
@@ -223,8 +240,25 @@ def _validate_field_options(
         raise ValueError("required fields cannot declare defaults")
     if default_factory is not MISSING and not callable(default_factory):
         raise TypeError("default_factory must be callable")
+    if parser is not None and not callable(parser):
+        raise TypeError("parser must be callable")
     if empty not in {"raw", "parse", "none", "error"}:
         raise ValueError("empty must be 'raw', 'parse', 'none', or 'error'")
+    if empty == "parse" and parser is None:
+        raise ValueError("empty='parse' requires a parser")
+    if default is not MISSING:
+        if isinstance(
+            default, (MutableMapping, MutableSequence, MutableSet, bytearray)
+        ):
+            raise TypeError(
+                "mutable static defaults are not allowed; use default_factory"
+            )
+        try:
+            hash(default)
+        except TypeError as exc:
+            raise TypeError(
+                "unhashable static defaults are not allowed; use default_factory"
+            ) from exc
     return normalized
 
 
@@ -272,6 +306,7 @@ def field(
         required=required,
         default=default,
         default_factory=default_factory,
+        parser=parser,
         empty=empty,
     )
     return Field(
@@ -314,6 +349,7 @@ def id_field(
         required=True,
         default=MISSING,
         default_factory=MISSING,
+        parser=parser,
     )
     return Field(
         label=label,
@@ -360,6 +396,7 @@ def discriminator_field(
         required=True,
         default=MISSING,
         default_factory=MISSING,
+        parser=parser,
     )
     return Field(
         label=label,
@@ -421,6 +458,7 @@ def discriminator(
         required=True,
         default=MISSING,
         default_factory=MISSING,
+        parser=parser,
     )
     return Field(
         label=label,
@@ -469,6 +507,12 @@ def reference(
         Keep separators distinct from valid key text when using ``many=True``.
 
     """
+    if not isinstance(target, str):
+        raise TypeError("reference target must be a string")
+    if not target:
+        raise ValueError("reference target cannot be empty")
+    if not isinstance(separator, str):
+        raise TypeError("reference separator must be a string")
     if many and not separator:
         raise ValueError("reference separator cannot be empty")
     normalized_aliases = _validate_field_options(

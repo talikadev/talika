@@ -53,6 +53,21 @@ class TableCell:
     source_column: int
     source_value: str
 
+    def __post_init__(self) -> None:
+        """Validate the immutable source-aware cell boundary."""
+        if not isinstance(self.value, str):
+            raise TypeError("TableCell.value must be a string")
+        if not isinstance(self.source_value, str):
+            raise TypeError("TableCell.source_value must be a string")
+        for name, coordinate in (
+            ("source_row", self.source_row),
+            ("source_column", self.source_column),
+        ):
+            if isinstance(coordinate, bool) or not isinstance(coordinate, int):
+                raise TypeError(f"TableCell.{name} must be an integer")
+            if coordinate < 1:
+                raise ValueError(f"TableCell.{name} must be positive")
+
     @classmethod
     def from_value(cls, value: str, *, row: int, column: int) -> TableCell:
         """Create an untransformed cell at a source location.
@@ -118,13 +133,38 @@ class TableData:
         rows: Immutable rows of immutable ``TableCell`` tuples.
 
     !!! info
-        ``TableData`` is immutable by convention and dataclass shape, but the
-        values it contains may still be arbitrary strings produced by project
-        transformations.
+        Direct construction validates every cell and normalizes nested row
+        sequences to tuples, so mutable input lists cannot change the stored
+        table after construction.
 
     """
 
     rows: tuple[tuple[TableCell, ...], ...]
+
+    def __post_init__(self) -> None:
+        """Validate cells and normalize directly constructed rows to tuples."""
+        if isinstance(self.rows, (str, bytes, bytearray)) or not isinstance(
+            self.rows, Sequence
+        ):
+            raise TypeError("TableData rows must be a sequence of row sequences")
+
+        normalized_rows: list[tuple[TableCell, ...]] = []
+        for row_number, row in enumerate(self.rows, start=1):
+            if isinstance(row, (str, bytes, bytearray)) or not isinstance(
+                row, Sequence
+            ):
+                raise TypeError(
+                    f"TableData row {row_number} must be a sequence of TableCell values"
+                )
+            normalized_row = tuple(row)
+            for column_number, cell in enumerate(normalized_row, start=1):
+                if not isinstance(cell, TableCell):
+                    raise TypeError(
+                        "TableData cells must be TableCell instances "
+                        f"(row {row_number}, column {column_number})"
+                    )
+            normalized_rows.append(normalized_row)
+        object.__setattr__(self, "rows", tuple(normalized_rows))
 
     @classmethod
     def from_rows(cls, rows: RawTable) -> TableData:
@@ -143,15 +183,33 @@ class TableData:
             ```
 
         """
-        return cls(
-            rows=tuple(
-                tuple(
-                    TableCell.from_value(value, row=row_number, column=column_number)
-                    for column_number, value in enumerate(row, start=1)
+        if isinstance(rows, (str, bytes, bytearray)) or not isinstance(rows, Sequence):
+            raise TypeError("table must be a non-string sequence of row sequences")
+
+        normalized_rows: list[tuple[TableCell, ...]] = []
+        for row_number, row in enumerate(rows, start=1):
+            if isinstance(row, (str, bytes, bytearray)) or not isinstance(
+                row, Sequence
+            ):
+                raise TypeError(
+                    f"table row {row_number} must be a non-string sequence of cells"
                 )
-                for row_number, row in enumerate(rows, start=1)
-            )
-        )
+            normalized_row: list[TableCell] = []
+            for column_number, value in enumerate(row, start=1):
+                if not isinstance(value, str):
+                    raise TypeError(
+                        "raw table cells must be strings "
+                        f"(row {row_number}, column {column_number})"
+                    )
+                normalized_row.append(
+                    TableCell.from_value(
+                        value,
+                        row=row_number,
+                        column=column_number,
+                    )
+                )
+            normalized_rows.append(tuple(normalized_row))
+        return cls(rows=tuple(normalized_rows))
 
     @classmethod
     def from_cells(cls, rows: Sequence[Sequence[TableCell]]) -> TableData:

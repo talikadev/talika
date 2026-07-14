@@ -154,6 +154,12 @@ the blank as a real authored value.
     for a missing required field, the table would appear valid even though the
     scenario author did not provide the required data.
 
+!!! warning "Static defaults must be safe to share"
+    A static `default` must be hashable and must not be a recognized mutable
+    container. Use `default_factory` for lists, dictionaries, sets, or other
+    per-record values. Defaults and factory results are already final Python
+    values; Talika does not pass them through the field parser.
+
 ## Parsers on Fields
 
 Every cell starts as text. A parser gives a field permission to turn that text
@@ -288,6 +294,10 @@ The available policies are:
 - `empty="none"` returns `None`.
 - `empty="error"` rejects the blank cell.
 
+`empty="parse"` requires a callable parser. Talika rejects that declaration
+immediately when no parser is supplied, because there would be no defined
+conversion for the blank cell.
+
 ```python title="Parsing blank cells with policies"
 --8<-- "docs_src/guides/basic/fields.py:empty-policies-parse"
 ```
@@ -323,6 +333,12 @@ blank value when the label is present.
 A row table may declare an ID field when diagnostics, parsers, defaults, or
 later validation should know which authored item is being parsed. A column
 table must declare one because each item column needs a stable ID.
+
+A row schema may declare at most one ID field; a column schema must declare
+exactly one. These cardinality rules are checked while the class is created.
+Parsed IDs must also be hashable and unique, including row-table IDs and IDs
+that become equal only after conversion (for example `1` and `01` parsed as
+integers).
 
 When an ID is present, diagnostics can include `item_id`:
 

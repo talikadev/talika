@@ -43,6 +43,12 @@ Talika reads these annotations when the schema class is created. If the
 annotation is supported and the field does not already have a parser, Talika
 attaches the matching parser to the field.
 
+Resolution is isolated per field and follows inherited annotations back to
+the nearest class that declared them. If one postponed annotation cannot be
+resolved, only that field stays as raw text; supported annotations on other
+fields continue to infer their parsers. An explicit parser takes precedence
+without requiring its annotation to resolve.
+
 The important phrase is "matching parser." Annotation inference is not runtime
 type checking. It is a small convenience layer over the same parser mechanism
 used by `field(parser=...)`.

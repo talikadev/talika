@@ -59,6 +59,10 @@ The important habit is to decide. Once missing, empty, and default values are
 separate ideas, feature files become easier to review and parser behavior
 becomes easier to explain.
 
+Defaults are schema-owned final Python values; they are not passed through a
+cell parser. Use a hashable, non-mutable static default for shared constants,
+and use `default_factory` for fresh mutable values such as lists or mappings.
+
 Compare the concrete behavior for [missing optional fields](../guides/basic/missing-empty-defaults.md#missing-optional-fields){ data-preview }
 and [present but empty cells](../guides/basic/missing-empty-defaults.md#empty-cells-are-present-values){ data-preview }.
 

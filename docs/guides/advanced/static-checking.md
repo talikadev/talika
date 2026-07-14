@@ -30,7 +30,8 @@ parsed as an integer.
 !!! note "Static does not mean shallow"
     Static checking does not merely inspect labels. It runs the schema parser,
     field parsers, record validators, table validators, references, defaults,
-    transformations, and output conversion configured on `parse()`.
+    and transformations. It deliberately uses `parse_records()`, so output
+    models and custom `build_output()` hooks do not run during checking.
 
 ## Discover Feature Tables
 
@@ -47,6 +48,13 @@ preserves feature-file coordinates, not just table-relative positions.
 
 The second row of the datatable is still row 6 in the feature file. That is the
 coordinate an editor, CI log, or reviewer needs.
+
+Scenario outlines are expanded with the official Gherkin compiler. Each
+Examples row produces one logical `FeatureTable` and counts as one matched
+table. Filters and returned metadata keep the original outline scenario and
+step text. A cell that is exactly `<parameter>` points to the corresponding
+Examples cell; a mixed template such as `user-<id>` keeps the template cell as
+its source while exposing the compiled logical value.
 
 !!! tip "Filter narrowly"
     Use `step` when one schema belongs to one step text. Use `scenario` when a
@@ -89,8 +97,8 @@ text.
 ```
 
 !!! warning "Your lifecycle code still runs"
-    If a parser, validator, reference rule, transformer, or output builder
-    normally talks to a service, reads a clock, or depends on random data, make
+    If a parser, validator, reference rule, or transformer normally talks to a
+    service, reads a clock, or depends on random data, make
     the checking path deterministic. Static checking should be boring and
     repeatable.
 
@@ -161,7 +169,14 @@ The CLI returns conventional exit codes:
 
 - `0` when all matched tables are valid
 - `1` when one or more matched tables have diagnostics
+- `1` when setup or discovery fails, including missing/unreadable files,
+  invalid Gherkin, schema-import failures, or context-factory failures
 - `2` when the filters match no tables
+
+Operational failures are concise and traceback-free in text mode. JSON mode
+keeps the normal top-level shape with `status="failed"`, zero matched tables,
+one error, and nullable table-specific diagnostic fields. Invalid command
+syntax remains argparse exit code `2`.
 
 When no tables match, the command prints:
 

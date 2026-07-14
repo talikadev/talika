@@ -158,9 +158,19 @@ record object, not the slug string.
 This is useful when the table author should read or write meaningful labels,
 but the parsed record still has a separate technical ID.
 
+For a non-variant schema, a missing target is rejected when the schema class is
+created. A family with an explicit discriminator may register variants later,
+so Talika validates the complete family when parsing begins.
+
 !!! warning "The target must be unique"
     A reference target is an index. If two records have the same target value,
     Talika cannot know which record the authored key means, so parsing fails.
+
+    Target values must also be hashable. For variant families, a target may be
+    declared on the base or exposed by selected variants. If several variants
+    declare it, they must reuse the same parser object (or all omit a parser).
+    Put the target on a common base or `TableFields` component when variants
+    would otherwise disagree.
 
 ## Validate After References Resolve
 
@@ -218,6 +228,13 @@ not exist. The table author needs to fix the cell that contains `MISSING`.
     Validators depend on links being trustworthy. If references cannot be
     resolved, Talika reports the reference problem before running dependent
     validation logic.
+
+In collect mode, Talika checks reference fields in record order, declaration
+order, and key order. It can report several missing or conversion failures
+from one many-reference cell. A reference attribute is assigned only if every
+key for that field resolves. If any reference diagnostic exists, record/table
+validation and output conversion are skipped because they require complete
+links.
 
 ## Diagnose Ambiguous Targets
 

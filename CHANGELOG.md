@@ -4,6 +4,40 @@ All notable changes to this project are documented here. Until the first
 stable release, additions may refine APIs while preserving the documented
 `0.1` behavior whenever practical.
 
+## 0.2.0
+
+Talika 0.2.0 is a stabilization release. It tightens existing parsing,
+identity, reference, checking, and packaging behavior without adding a new
+table language or rendering layer.
+
+### Breaking stabilization changes
+
+- Reject malformed raw tables, invalid source cells, invalid field options,
+  mutable or unhashable static defaults, and `empty="parse"` without a parser
+  at their public boundaries.
+- Require zero or one ID field on row schemas and exactly one on column
+  schemas during class creation; require parsed IDs to be hashable and unique
+  in both orientations.
+- Treat defaults and default-factory results as final Python values rather
+  than sending them through field parsers.
+- Make static checking call `parse_records()`, so parsing, transformations,
+  defaults, references, and validation still run while output models and
+  custom output builders do not.
+- Expand scenario outlines once per Examples row using the official Gherkin
+  compiler and reject numeric expansions above 10,000 generated keys.
+
+### Bug fixes and hardening
+
+- Isolate annotation inference per field so an unresolved postponed
+  annotation cannot disable supported inference elsewhere in a schema.
+- Validate reference target availability, hashability, uniqueness, and
+  family-wide parser compatibility; collect independent reference failures in
+  deterministic order and stop dependent validation/output stages.
+- Convert feature discovery, Gherkin parsing, schema import, and context
+  factory failures into controlled checker diagnostics and exit code 1.
+- Add pull-request CI, line-and-branch coverage enforcement, dependency-bound
+  test jobs, strict documentation builds, and wheel/sdist smoke tests.
+
 ## 0.1.1
 
 This documentation and release-tooling update makes Talika easier to discover,
