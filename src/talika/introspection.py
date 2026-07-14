@@ -44,7 +44,7 @@ class FieldContract:
 
     Attributes:
         name: Python schema attribute name.
-        label: Canonical BDD table label.
+        label: Canonical Gherkin data table label.
         aliases: Alternate accepted labels.
         required: Whether the field is required.
         is_id: Whether the field identifies column-oriented records.

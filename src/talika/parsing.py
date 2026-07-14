@@ -32,7 +32,7 @@ def parse_table(
     context: Mapping[str, Any] | ParseContext | None = None,
     error_mode: str = "first",
 ) -> list[Any]:
-    """Parse a BDD table using a schema class.
+    """Parse a Gherkin data table using a schema class.
 
     This is the functional equivalent of ``schema.parse(datatable)``. It is
     useful in codebases that prefer explicit parser functions over classmethod
@@ -65,7 +65,7 @@ def parse_table_records(
     context: Mapping[str, Any] | ParseContext | None = None,
     error_mode: str = "first",
 ) -> list[TableT]:
-    """Parse a BDD table and return validated schema record instances.
+    """Parse a Gherkin data table and return validated schema record instances.
 
     This is the functional equivalent of ``schema.parse_records(datatable)``.
     It intentionally skips optional output-model conversion, making the return

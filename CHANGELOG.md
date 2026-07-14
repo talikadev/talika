@@ -4,10 +4,29 @@ All notable changes to this project are documented here. Until the first
 stable release, additions may refine APIs while preserving the documented
 `0.1` behavior whenever practical.
 
+## 0.1.1
+
+This documentation and release-tooling update makes Talika easier to discover,
+understand, and publish while keeping the package API unchanged.
+
+### Documentation
+
+- Redesign the project README as a concise introduction with branding, package
+  badges, a Gherkin-to-Python quickstart, key features, and clear paths into the
+  full documentation.
+- Standardize on **Gherkin data table** throughout package metadata,
+  documentation, and public API descriptions.
+- Improve the documentation site's light theme and simplify page metadata.
+
+### Release tooling
+
+- Add a manual trusted-publishing workflow that retrieves verified wheel and
+  source distributions from a GitHub Release before publishing them to PyPI.
+
 ## 0.1.0
 
 The first public alpha release of Talika introduces typed, validated contracts
-for BDD data tables without imposing a project-specific table vocabulary.
+for Gherkin data tables without imposing a project-specific table vocabulary.
 
 ### Schemas and fields
 

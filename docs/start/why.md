@@ -78,7 +78,7 @@ Python objects.
 --8<-- "docs_src/why/why.py:c"
 ```
 
-1.  Defines a new row-oriented table schema. When parsed, each data row in the BDD table will be validated and converted into a `UserTable` record instance.
+1.  Defines a new row-oriented table schema. When parsed, each data row in the Gherkin data table will be validated and converted into a `UserTable` record instance.
 
 
 2. ```required=True```
@@ -98,7 +98,7 @@ Python objects.
 
     `default=True`
 
-    If the "active" column is entirely missing from the BDD table, the value for all parsed records will default to True.
+    If the "active" column is entirely missing from the Gherkin data table, the value for all parsed records will default to True.
 
 
 6.  Takes raw rows (or source-aware `TableData`) from `datatable`, matches the headers to your declared fields,

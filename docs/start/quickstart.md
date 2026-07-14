@@ -11,7 +11,7 @@ tags:
 # Quickstart
 
 This quickstart builds a small `UserTable` contract and uses it to parse a
-real `pytest-bdd` data table.
+real Gherkin data table with `pytest-bdd`.
 
 By the end, the table text from a feature file will become Python records with
 an integer age, a list of roles, a strict boolean flag, source-aware errors, and
@@ -21,7 +21,7 @@ The examples assume Talika is already available in your test environment.
 
 ## Start with a feature table
 
-A `pytest-bdd` data table is friendly in a feature file:
+A Gherkin data table is friendly in a feature file:
 
 ```gherkin title="users.feature"
 --8<-- "docs_src/start/quickstart.py:feature"

@@ -1,4 +1,4 @@
-"""Declarative expansion helpers for grouped column-oriented BDD tables.
+"""Declarative expansion helpers for grouped column-oriented Gherkin data tables.
 
 The helpers in this module cover a common table shape: the first row contains
 one key or ID cell per source group, and every other row contains one value for
