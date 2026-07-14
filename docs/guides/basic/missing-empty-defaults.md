@@ -75,6 +75,12 @@ The fallback order is direct:
 - otherwise, if `default` is declared, use it
 - otherwise, return `None`
 
+Defaults are final values. A field parser only converts authored cells; it
+does not receive a static default or the result of a default factory. Static
+defaults must be hashable and must not be mutable containers. Use
+`default_factory` whenever each record needs a fresh list, dictionary, set, or
+other mutable value.
+
 !!! note "Defaults run only for absent fields"
     Defaults do not run because a cell is blank. They run because the field is
     not present in the table.
@@ -223,6 +229,9 @@ The policies are:
 - `empty="parse"` sends `""` to the parser
 - `empty="none"` returns `None`
 - `empty="error"` rejects `""`
+
+Declaring `empty="parse"` without a callable parser is invalid and fails
+immediately when the field is declared.
 
 ```python title="Parsing empty cells with policies"
 --8<-- "docs_src/guides/basic/missing-empty-defaults.py:empty-policies-parse"

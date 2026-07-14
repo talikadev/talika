@@ -181,6 +181,15 @@ A row-oriented schema may declare an `id_field(...)`. This is optional, but it
 is useful when parsers, default factories, diagnostics, or later validation
 need a stable item identifier.
 
+Row schemas allow zero or one `id_field`. Multiple ID declarations fail while
+the schema class is created. Parsed IDs must be hashable and unique across the
+table; typed duplicates such as `1` and `01` are duplicates when the ID parser
+converts both to integer `1`.
+
+Use `TableFields` for an incomplete reusable group of declarations. Do not
+create an incomplete row or column schema solely to add an ID in a later
+subclass.
+
 ```python title="A row table with item IDs"
 --8<-- "docs_src/guides/basic/row-tables.py:id-contract"
 ```

@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from .checker import FeatureDiagnostic, check_feature_tables, discover_feature_tables
+from .errors import TableError, TableErrorCode
 from .schema import BaseTable
 
 
@@ -184,6 +185,50 @@ def _print_json(payload: Mapping[str, Any]) -> None:
     print(json.dumps(payload, indent=2, sort_keys=True, default=_json_default))
 
 
+def _checker_failure(exc: Exception) -> TableError:
+    """Normalize an operational CLI failure without exposing a traceback."""
+    if isinstance(exc, TableError) and exc.code == TableErrorCode.CHECKER_FAILED.value:
+        return exc
+    error = TableError(
+        f"Static checker failed: {exc}",
+        code=TableErrorCode.CHECKER_FAILED,
+    )
+    error.__cause__ = exc
+    return error
+
+
+def _render_checker_failure(error: TableError, output_format: str) -> None:
+    """Render a controlled checker-level failure in text or JSON form."""
+    if output_format == "json":
+        _print_json(
+            {
+                "status": "failed",
+                "matched_tables": 0,
+                "error_count": 1,
+                "diagnostics": [
+                    {
+                        "path": None,
+                        "feature": None,
+                        "scenario": None,
+                        "step": None,
+                        "code": error.code,
+                        "message": error.message,
+                        "hint": error.hint,
+                        "schema": error.schema,
+                        "field": error.field,
+                        "row": error.row,
+                        "column": error.column,
+                        "item_id": error.item_id,
+                        "value": error.value if error.has_value else None,
+                    }
+                ],
+            }
+        )
+        return
+    concise_message = error.message.splitlines()[0]
+    print(f"talika: {error.code}: {concise_message}")
+
+
 def _render_describe_text(schema: type[BaseTable]) -> str:
     """Return a compact human-readable schema contract.
 
@@ -299,7 +344,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         match no tables.
 
     Raises:
-        SystemExit: Through ``argparse`` when arguments or imports are invalid.
+        SystemExit: Through ``argparse`` only when command syntax is invalid.
 
     !!! warning
         ``check`` parses matching tables and runs project parsers/validators.
@@ -311,33 +356,42 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         schema = _schema(args.schema)
         context = _context(args.context_factory) if args.command == "check" else None
-    except (AttributeError, ImportError, TypeError, ValueError) as exc:
-        parser.error(str(exc))
+    except Exception as exc:
+        _render_checker_failure(_checker_failure(exc), args.format)
+        return 1
 
     if args.command == "describe":
-        if args.format == "json":
-            _print_json(schema.describe().as_dict())
-        else:
-            print(_render_describe_text(schema))
-        return 0
+        try:
+            if args.format == "json":
+                _print_json(schema.describe().as_dict())
+            else:
+                print(_render_describe_text(schema))
+            return 0
+        except Exception as exc:
+            _render_checker_failure(_checker_failure(exc), args.format)
+            return 1
 
     diagnostics = []
     matched_tables = 0
 
-    for path in args.paths:
-        tables = discover_feature_tables(
-            path,
-            step=args.step,
-            scenario=args.scenario,
-        )
-        matched_tables += len(tables)
-        diagnostics.extend(
-            check_feature_tables(
-                tables,
-                schema=schema,
-                context=context,
+    try:
+        for path in args.paths:
+            tables = discover_feature_tables(
+                path,
+                step=args.step,
+                scenario=args.scenario,
             )
-        )
+            matched_tables += len(tables)
+            diagnostics.extend(
+                check_feature_tables(
+                    tables,
+                    schema=schema,
+                    context=context,
+                )
+            )
+    except Exception as exc:
+        _render_checker_failure(_checker_failure(exc), args.format)
+        return 1
 
     if args.format == "json":
         status = "failed" if diagnostics else "valid"

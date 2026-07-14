@@ -87,3 +87,14 @@ def test_duplicate_ids_are_rejected():
                 ["Headline*", "Hello", "Poll"],
             ]
         )
+
+
+def test_duplicate_ids_are_checked_after_parsing():
+    class TypedIds(ColumnTable):
+        id = id_field("IDs", parser=lambda value, context: int(value))
+
+    with pytest.raises(TableError) as captured:
+        TypedIds.parse([["IDs", "1", "01"]])
+
+    assert captured.value.code == "duplicate_id"
+    assert captured.value.item_id == 1

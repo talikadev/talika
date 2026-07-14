@@ -2,6 +2,7 @@ name: CI
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches:
       - master
@@ -33,7 +34,55 @@ jobs:
       - run: uv sync --all-extras --dev
       - run: uv pip install "${{ matrix.pytest }}"
       - run: uv run pytest -p no:cacheprovider
+
+  minimum-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.10"
+      - run: uv sync --all-extras --dev
+      - run: >-
+          uv pip install
+          "gherkin-official==29.0.0"
+          "pydantic==2.0.0"
+          "pytest==8.0.0"
+          "pytest-bdd==8.0.0"
+      - run: uv run pytest -p no:cacheprovider
+
+  current-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - run: uv sync --all-extras --dev
+      - run: >-
+          uv pip install --upgrade
+          gherkin-official pydantic pytest pytest-bdd pytest-cov
+      - run: uv run pytest -p no:cacheprovider
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --all-extras --dev
+      - run: uv run coverage run --branch -m pytest -p no:cacheprovider
+      - run: uv run coverage report --fail-under=90
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy src tests/typing/public_api.py
+      - run: uv run --group docs zensical build --strict
       - run: uv build
+      - name: Smoke-test built wheel
+        run: |
+          python -m venv wheel-smoke
+          wheel-smoke/bin/python -m pip install dist/*.whl
+          wheel-smoke/bin/python -c "from talika import RowTable, field; T = type('SmokeTable', (RowTable,), {'value': field('value')}); assert T.parse([['value'], ['ok']])[0].value == 'ok'"
+          wheel-smoke/bin/talika --help
+          wheel-smoke/bin/talika describe talika.schema:RowTable

@@ -268,3 +268,30 @@ def test_custom_rules_must_return_cells_and_correct_counts():
             TableData.from_rows([["Keys", "1..2"], ["Value", "item"]]),
             ParseContext(),
         )
+
+
+def test_numeric_range_allows_ten_thousand_keys():
+    cells = NumericRange().expand(source_cell("1..10000"), ParseContext())
+
+    assert len(cells) == 10_000
+    assert cells[-1].value == "10000"
+
+
+def test_numeric_range_limit_is_source_aware_through_the_expander():
+    expander = ColumnGroupExpander(
+        key_row="IDs",
+        range_rule=NumericRange(),
+        repeat_rule=PrefixRepeat(),
+    )
+
+    with pytest.raises(TableError) as captured:
+        expander.transform(
+            TableData.from_rows([["IDs", "1..10001"]]),
+            ParseContext(),
+            schema="ContentTable",
+        )
+
+    assert captured.value.code == "expansion_limit"
+    assert captured.value.row == 1
+    assert captured.value.column == 2
+    assert captured.value.value == "1..10001"

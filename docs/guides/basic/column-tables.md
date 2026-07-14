@@ -50,6 +50,10 @@ The contract says:
     declare one, because the parser needs a stable identity for each item
     column.
 
+    Exactly-one cardinality is checked when the schema class is created. Put
+    incomplete reusable declarations on `TableFields`, then combine that
+    component with a concrete `ColumnTable` that declares its single ID.
+
 ## Parse Item Columns
 
 The datatable shape mirrors the feature table. The first cell of each row is a
@@ -179,6 +183,10 @@ which values are item IDs.
 
 Every item column needs a unique ID. Duplicate IDs make references, defaults,
 diagnostics, and later validation ambiguous.
+
+Uniqueness is checked after ID parsing, and IDs must be hashable. Consequently
+`1` and `01` collide when an integer parser converts both to `1`; a parser that
+returns a list fails with `invalid_id` at the authored ID cell.
 
 ```python title="Duplicate item ID"
 --8<-- "docs_src/guides/basic/column-tables.py:duplicate-id"

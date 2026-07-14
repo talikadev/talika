@@ -13,6 +13,7 @@ optional output objects are built.
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast, get_type_hints
 
@@ -87,14 +88,13 @@ class SchemaMeta(type):
         schema_cls = cast(Any, cls)
         schema_cls.__fields__ = fields
         mcls._validate_declaration(cls)
-        try:
-            annotations = get_type_hints(cls)
-        except (NameError, TypeError):
-            annotations = getattr(cls, "__annotations__", {})
         for field_name, declared in fields.items():
-            if declared.parser is not None or field_name not in annotations:
+            if declared.parser is not None:
                 continue
-            inferred = parser_for_annotation(annotations[field_name])
+            annotation = mcls._resolve_field_annotation(cls, field_name)
+            if annotation is _INVALID:
+                continue
+            inferred = parser_for_annotation(annotation)
             if inferred is not None:
                 declared.parser = inferred
                 declared.parse_empty = bool(getattr(inferred, "parse_empty", False))
@@ -111,6 +111,40 @@ class SchemaMeta(type):
                 raise TypeError("A schema can declare only one variant mapping")
             mcls._register_component_variants(cls, declared_variant_fields[0])
         return cls
+
+    @staticmethod
+    def _resolve_field_annotation(cls: type, field_name: str) -> Any:
+        """Resolve one annotation without allowing another field to poison it."""
+        declaring_class = next(
+            (
+                candidate
+                for candidate in cls.__mro__
+                if field_name in candidate.__dict__.get("__annotations__", {})
+            ),
+            None,
+        )
+        if declaring_class is None:
+            return _INVALID
+        annotation = declaring_class.__dict__["__annotations__"][field_name]
+        if not isinstance(annotation, str):
+            return annotation
+
+        module = sys.modules.get(declaring_class.__module__)
+        globalns = vars(module) if module is not None else {}
+        localns = dict(vars(declaring_class))
+        localns[declaring_class.__name__] = declaring_class
+        holder = type(
+            "_TalikaFieldAnnotation",
+            (),
+            {
+                "__annotations__": {"value": annotation},
+                "__module__": declaring_class.__module__,
+            },
+        )
+        try:
+            return get_type_hints(holder, globalns=globalns, localns=localns)["value"]
+        except (NameError, TypeError, SyntaxError):
+            return _INVALID
 
     @staticmethod
     def _validate_declaration(cls: Any) -> None:
@@ -151,6 +185,32 @@ class SchemaMeta(type):
                     f"{policy_name} must be {allowed_values}",
                     schema=cls.__name__,
                 )
+
+        orientation = getattr(cls, "__table_orientation__", None)
+        if not cls.__dict__.get("__talika_framework_base__", False):
+            id_count = sum(field.is_id for field in cls.__fields__.values())
+            if orientation == "row" and id_count > 1:
+                raise SchemaDefinitionError(
+                    "RowTable schemas allow at most one id_field",
+                    schema=cls.__name__,
+                )
+            if orientation == "column" and id_count != 1:
+                raise SchemaDefinitionError(
+                    "ColumnTable schemas require exactly one id_field",
+                    schema=cls.__name__,
+                )
+
+        has_discriminator = any(
+            field.is_discriminator for field in cls.__fields__.values()
+        )
+        if orientation is not None and not has_discriminator:
+            for declared in cls.__fields__.values():
+                spec = declared.reference
+                if spec is not None and spec.target not in cls.__fields__:
+                    raise SchemaDefinitionError(
+                        f"Reference target field {spec.target!r} is not declared",
+                        schema=cls.__name__,
+                    )
 
     @staticmethod
     def _register_component_variants(cls: Any, declared: Field) -> None:
@@ -214,6 +274,9 @@ class TableFields(metaclass=SchemaMeta):
         ```
     """
 
+    __talika_framework_base__ = True
+    __table_orientation__: ClassVar[str | None] = None
+
 
 class BaseTable(TableRecord, TableFields):
     """Shared schema lifecycle for row- and column-oriented tables.
@@ -235,6 +298,7 @@ class BaseTable(TableRecord, TableFields):
 
     """
 
+    __talika_framework_base__ = True
     table_transformer = None
     output_model = None
     unknown_fields = "forbid"
@@ -527,6 +591,7 @@ class BaseTable(TableRecord, TableFields):
         """
         cls._validate_schema_labels()
         if not cls.__variants__:
+            cls._validate_reference_configuration()
             return
 
         discriminators = [
@@ -561,6 +626,50 @@ class BaseTable(TableRecord, TableFields):
                     schema=variant_cls,
                     field=declared.label,
                 )
+        cls._validate_reference_configuration()
+
+    @classmethod
+    def _validate_reference_configuration(cls) -> dict[str, Field]:
+        """Validate family-wide reference targets and return parser contracts."""
+        family = [cls, *cls.__variants__.values()]
+        target_names: list[str] = []
+        for schema in family:
+            for declared in schema.__fields__.values():
+                if (
+                    declared.reference is not None
+                    and declared.reference.target not in target_names
+                ):
+                    target_names.append(declared.reference.target)
+
+        targets: dict[str, Field] = {}
+        for target_name in target_names:
+            candidates = [
+                schema.__fields__[target_name]
+                for schema in family
+                if target_name in schema.__fields__
+            ]
+            if not candidates:
+                raise TableError(
+                    f"Reference target field {target_name!r} is not declared",
+                    schema=cls,
+                    code=TableErrorCode.REFERENCE_FAILED,
+                )
+            parsers: list[object] = []
+            for candidate in candidates:
+                if not any(candidate.parser is parser for parser in parsers):
+                    parsers.append(candidate.parser)
+            if len(parsers) > 1:
+                raise TableError(
+                    f"Reference target field {target_name!r} has ambiguous parsers",
+                    schema=cls,
+                    code=TableErrorCode.REFERENCE_FAILED,
+                    hint=(
+                        "Declare the target field on a common base or TableFields "
+                        "component so every variant shares one parser object."
+                    ),
+                )
+            targets[target_name] = candidates[0]
+        return targets
 
     @classmethod
     def _accepted_labels(cls) -> set[str]:
@@ -939,7 +1048,14 @@ class BaseTable(TableRecord, TableFields):
             so transformation cannot produce an unparsable empty table.
 
         """
-        source_table = TableData.ensure(datatable)
+        try:
+            source_table = TableData.ensure(datatable)
+        except (TypeError, ValueError) as exc:
+            raise TableError(
+                f"Invalid table input: {exc}",
+                schema=cls,
+                code=TableErrorCode.INVALID_TABLE_INPUT,
+            ) from exc
         cls._check_table(source_table)
 
         try:
@@ -1169,6 +1285,31 @@ class BaseTable(TableRecord, TableFields):
             )
 
     @classmethod
+    def _validate_id(
+        cls,
+        value: Any,
+        cell: TableCell,
+        declared: Field,
+        errors: list[TableError] | None,
+    ) -> bool:
+        """Require a parsed identity value that can safely key indexes."""
+        try:
+            hash(value)
+        except TypeError as exc:
+            error = TableError.from_cell(
+                f"Parsed item ID {value!r} must be hashable",
+                cell,
+                schema=cls,
+                field=declared.label,
+                code=TableErrorCode.INVALID_ID,
+                hint="Return a hashable scalar value from the ID parser.",
+            )
+            error.__cause__ = exc
+            cls._report(error, errors)
+            return False
+        return True
+
+    @classmethod
     def _reject_duplicates(
         cls,
         label_cells: Sequence[TableCell],
@@ -1359,14 +1500,10 @@ class BaseTable(TableRecord, TableFields):
         # errors first and stops before dependent lifecycle stages.
         cls._raise_collected(errors)
 
-        references_valid = True
-        try:
-            cls._resolve_references(records, parse_context)
-        except TableError as exc:
-            cls._report(exc, errors)
-            references_valid = False
+        cls._resolve_references(records, parse_context, errors)
+        cls._raise_collected(errors)
 
-        for record in records if references_valid else ():
+        for record in records:
             source = record.table_source
             record_cls = type(record)
             try:
@@ -1390,22 +1527,21 @@ class BaseTable(TableRecord, TableFields):
                     errors,
                 )
 
-        if references_valid:
-            try:
-                cls.validate_records(records, parse_context)
-            except TableError as exc:
-                cls._report(exc, errors)
-            except Exception as exc:
-                error = TableError(
-                    f"Table validation failed: {exc}",
-                    schema=cls,
-                    code=TableErrorCode.TABLE_VALIDATION_FAILED,
-                )
-                error.__cause__ = exc
-                cls._report(
-                    error,
-                    errors,
-                )
+        try:
+            cls.validate_records(records, parse_context)
+        except TableError as exc:
+            cls._report(exc, errors)
+        except Exception as exc:
+            error = TableError(
+                f"Table validation failed: {exc}",
+                schema=cls,
+                code=TableErrorCode.TABLE_VALIDATION_FAILED,
+            )
+            error.__cause__ = exc
+            cls._report(
+                error,
+                errors,
+            )
 
         cls._raise_collected(errors)
 
@@ -1442,12 +1578,14 @@ class BaseTable(TableRecord, TableFields):
         cls,
         records: list[BaseTable],
         parse_context: ParseContext,
+        errors: list[TableError] | None = None,
     ) -> None:
         """Resolve declared local references against records from this table.
 
         Args:
             records: Parsed records from one table.
             parse_context: Parse context for the current operation.
+            errors: Optional collection sink for independent reference failures.
 
         Raises:
             TableError: If reference targets are missing, duplicate, or
@@ -1469,7 +1607,9 @@ class BaseTable(TableRecord, TableFields):
         if not records_with_references:
             return
 
+        target_fields = cls._validate_reference_configuration()
         indexes: dict[str, dict[Any, BaseTable]] = {}
+        invalid_targets: set[str] = set()
         for source_record in records_with_references:
             for declared in type(source_record).__fields__.values():
                 spec = declared.reference
@@ -1480,24 +1620,54 @@ class BaseTable(TableRecord, TableFields):
                     if spec.target not in type(record).__fields__:
                         continue
                     target_value = getattr(record, spec.target)
+                    target_declared = type(record).__fields__[spec.target]
+                    cell = record.table_source.cells.get(spec.target)
+                    try:
+                        hash(target_value)
+                    except TypeError as exc:
+                        if cell is not None:
+                            error = TableError.from_cell(
+                                f"Reference target {target_value!r} must be hashable",
+                                cell,
+                                schema=type(record),
+                                field=target_declared.label,
+                                code=TableErrorCode.REFERENCE_FAILED,
+                            )
+                        else:
+                            error = TableError(
+                                f"Reference target {target_value!r} must be hashable",
+                                schema=type(record),
+                                field=target_declared.label,
+                                row=record.table_source.row,
+                                column=record.table_source.column,
+                                code=TableErrorCode.REFERENCE_FAILED,
+                            )
+                        error.__cause__ = exc
+                        cls._report(error, errors)
+                        invalid_targets.add(spec.target)
+                        continue
                     if target_value in index:
-                        target_declared = type(record).__fields__[spec.target]
-                        cell = record.source_for(spec.target)
-                        raise TableError.from_cell(
-                            f"Reference target {target_value!r} is not unique",
-                            cell,
-                            schema=type(record),
-                            field=target_declared.label,
-                            code=TableErrorCode.REFERENCE_FAILED,
-                        )
+                        if cell is not None:
+                            error = TableError.from_cell(
+                                f"Reference target {target_value!r} is not unique",
+                                cell,
+                                schema=type(record),
+                                field=target_declared.label,
+                                code=TableErrorCode.REFERENCE_FAILED,
+                            )
+                        else:
+                            error = TableError(
+                                f"Reference target {target_value!r} is not unique",
+                                schema=type(record),
+                                field=target_declared.label,
+                                row=record.table_source.row,
+                                column=record.table_source.column,
+                                code=TableErrorCode.REFERENCE_FAILED,
+                            )
+                        cls._report(error, errors)
+                        invalid_targets.add(spec.target)
+                        continue
                     index[target_value] = record
-                if not index:
-                    raise TableError(
-                        f"Reference target field {spec.target!r} is not declared",
-                        schema=type(source_record),
-                        field=declared.label,
-                        code=TableErrorCode.REFERENCE_FAILED,
-                    )
                 indexes[spec.target] = index
 
         for record in records:
@@ -1509,37 +1679,45 @@ class BaseTable(TableRecord, TableFields):
                 if raw in (None, ""):
                     setattr(record, name, [] if spec.many else None)
                     continue
+                if spec.target in invalid_targets:
+                    continue
                 keys = (
                     [part.strip() for part in str(raw).split(spec.separator)]
                     if spec.many
                     else [raw]
                 )
-                resolved = []
+                resolved: list[BaseTable] = []
+                field_failed = False
                 for key in keys:
-                    key = cls._parse_reference_key(
-                        key,
-                        target_field=next(
-                            type(candidate).__fields__[spec.target]
-                            for candidate in records
-                            if spec.target in type(candidate).__fields__
-                        ),
-                        source_record=record,
-                        source_field=name,
-                        parse_context=parse_context,
-                    )
+                    try:
+                        key = cls._parse_reference_key(
+                            key,
+                            target_field=target_fields[spec.target],
+                            source_record=record,
+                            source_field=name,
+                            parse_context=parse_context,
+                        )
+                    except TableError as exc:
+                        cls._report(exc, errors)
+                        field_failed = True
+                        continue
                     try:
                         resolved.append(indexes[spec.target][key])
-                    except KeyError as exc:
+                    except (KeyError, TypeError) as exc:
                         cell = record.source_for(name)
-                        raise TableError.from_cell(
+                        error = TableError.from_cell(
                             f"Reference target {key!r} was not found",
                             cell,
                             schema=cls,
                             field=declared.label,
                             item_id=record.table_source.item_id,
                             code=TableErrorCode.REFERENCE_FAILED,
-                        ) from exc
-                setattr(record, name, resolved if spec.many else resolved[0])
+                        )
+                        error.__cause__ = exc
+                        cls._report(error, errors)
+                        field_failed = True
+                if not field_failed:
+                    setattr(record, name, resolved if spec.many else resolved[0])
 
     @classmethod
     def _parse_reference_key(
@@ -1610,6 +1788,9 @@ class RowTable(BaseTable):
         users = UserTable.parse([["name"], ["Alice"]])
         ```
     """
+
+    __talika_framework_base__ = True
+    __table_orientation__ = "row"
 
     @classmethod
     def parse(
@@ -1725,6 +1906,7 @@ class RowTable(BaseTable):
         ]
         preparse_id = len(id_fields) == 1
         records: list[BaseTable] = []
+        seen_ids: set[Any] = set()
         for row_number, row_cells in enumerate(table.rows[1:], start=2):
             if len(row_cells) != len(headers):
                 source_row = row_cells[0].source_row if row_cells else row_number
@@ -1761,6 +1943,25 @@ class RowTable(BaseTable):
                 )
                 if item_id is _INVALID:
                     continue
+                if id_cell is None:
+                    raise RuntimeError("A parsed ID must have a source cell")
+                if not cls._validate_id(item_id, id_cell, id_declared, errors):
+                    continue
+                if item_id in seen_ids:
+                    cls._report(
+                        TableError.from_cell(
+                            "Duplicate item ID",
+                            id_cell,
+                            schema=cls,
+                            field=id_declared.label,
+                            item_id=item_id,
+                            code=TableErrorCode.DUPLICATE_ID,
+                            hint="Use one unique item ID per parsed row.",
+                        ),
+                        errors,
+                    )
+                    continue
+                seen_ids.add(item_id)
                 parsed_values[id_name] = item_id
                 if id_cell is not None:
                     parsed_sources[id_name] = id_cell
@@ -1818,6 +2019,9 @@ class ColumnTable(BaseTable):
             headline = field("Headline*", required=True)
         ```
     """
+
+    __talika_framework_base__ = True
+    __table_orientation__ = "column"
 
     @classmethod
     def parse(
@@ -1974,6 +2178,8 @@ class ColumnTable(BaseTable):
                 errors=errors,
             )
             if item_id is _INVALID:
+                continue
+            if not cls._validate_id(item_id, id_cell, id_declared, errors):
                 continue
             if item_id in seen_ids:
                 cls._report(

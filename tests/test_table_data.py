@@ -96,3 +96,59 @@ def test_talika_error_can_be_created_from_a_source_cell():
     assert error.column == 2
     assert error.value == "invalid-range"
     assert "schema=ContentTable" in str(error)
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["not-a-table", b"bytes", [["label"], [1]], [["label"], "bare-row"]],
+)
+def test_raw_tables_reject_strings_rows_and_non_string_cells(value):
+    with pytest.raises(TypeError):
+        TableData.from_rows(value)
+
+
+def test_schema_wraps_invalid_raw_input_as_a_table_error():
+    class UserTable(RowTable):
+        name = field("name")
+
+    with pytest.raises(TableError) as captured:
+        UserTable.parse(["name", "Alice"])
+
+    assert captured.value.code == "invalid_table_input"
+    assert isinstance(captured.value.__cause__, TypeError)
+
+
+def test_direct_table_data_construction_normalizes_and_validates_rows():
+    cell = TableCell.from_value("name", row=1, column=1)
+    mutable_row = [cell]
+
+    table = TableData(rows=[mutable_row])
+    mutable_row.clear()
+
+    assert table.rows == ((cell,),)
+    with pytest.raises(TypeError, match="TableCell"):
+        TableData(rows=[["name"]])
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "error_type"),
+    [
+        ({"value": 1}, TypeError),
+        ({"source_value": 1}, TypeError),
+        ({"source_row": True}, TypeError),
+        ({"source_column": 1.5}, TypeError),
+        ({"source_row": 0}, ValueError),
+        ({"source_column": -1}, ValueError),
+    ],
+)
+def test_table_cells_validate_values_and_coordinates(kwargs, error_type):
+    values = {
+        "value": "name",
+        "source_row": 1,
+        "source_column": 1,
+        "source_value": "name",
+        **kwargs,
+    }
+
+    with pytest.raises(error_type):
+        TableCell(**values)

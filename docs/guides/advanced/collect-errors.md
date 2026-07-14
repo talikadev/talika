@@ -194,6 +194,12 @@ report the email problems against a structurally valid table.
     later dependent failures into a result that was already made unreliable by
     earlier structural or parsing errors.
 
+Reference resolution is one safe collection phase of its own. Missing targets
+and key-conversion failures are reported in record, field, then key order,
+including several failures from one many-reference cell. No reference field is
+partially assigned, and any reference failure stops record validation,
+whole-table validation, and output conversion.
+
 ## Collect Validation Failures
 
 When the table parses successfully, collect mode can also aggregate independent

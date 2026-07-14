@@ -32,6 +32,7 @@ class TableErrorCode(str, Enum):
     """
 
     TABLE_ERROR = "table_error"
+    INVALID_TABLE_INPUT = "invalid_table_input"
     SCHEMA_DEFINITION = "schema_definition"
     INVALID_CONTEXT = "invalid_context"
     TABLE_EMPTY = "table_empty"
@@ -49,7 +50,10 @@ class TableErrorCode(str, Enum):
     UNKNOWN_VARIANT = "unknown_variant"
     INAPPLICABLE_FIELD = "inapplicable_field"
     DUPLICATE_ID = "duplicate_id"
+    INVALID_ID = "invalid_id"
     REFERENCE_FAILED = "reference_failed"
+    EXPANSION_LIMIT = "expansion_limit"
+    CHECKER_FAILED = "checker_failed"
     RECORD_VALIDATION_FAILED = "record_validation_failed"
     TABLE_VALIDATION_FAILED = "table_validation_failed"
     OUTPUT_FAILED = "output_failed"
