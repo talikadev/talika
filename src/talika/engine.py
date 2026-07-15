@@ -13,14 +13,27 @@ optional output objects are built.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast, overload
 
 from .column_orientation import parse_column_table
 from .context import CellContext, DefaultContext, ParseContext
-from .diagnostics import ValidationResult, stable_text_value
-from .engine_types import INVALID, non_raising_result, raising_result
+from .diagnostics import (
+    DiagnosticSeverity,
+    TalikaWarning,
+    ValidationResult,
+    stable_text_value,
+)
+from .engine_types import (
+    INVALID,
+    DiagnosticCollector,
+    LifecycleOutcome,
+    error_diagnostic,
+    non_raising_result,
+    raising_result,
+)
 from .errors import (
     SchemaDefinitionError,
     TableError,
@@ -50,6 +63,7 @@ if TYPE_CHECKING:
     from .introspection import TableContract
 
 TableT = TypeVar("TableT", bound="BaseTable")
+OutputT = TypeVar("OutputT")
 _INVALID = INVALID
 
 
@@ -350,13 +364,13 @@ class BaseTable(TableRecord, TableFields):
 
     @classmethod
     def parse(
-        cls,
+        cls: type[TableT],
         datatable: RawTable | TableData,
         *,
         context: Mapping[str, Any] | ParseContext | None = None,
         error_mode: str = "first",
-    ) -> list[Any]:
-        """Parse a table through a concrete row or column orientation.
+    ) -> list[TableT]:
+        """Parse a table into validated records for a concrete orientation.
 
         Args:
             datatable: Raw string rows or source-aware ``TableData``.
@@ -364,7 +378,7 @@ class BaseTable(TableRecord, TableFields):
             error_mode: ``"first"`` or ``"collect"``.
 
         Returns:
-            Public output objects for parsed records.
+            Validated instances of the concrete schema class.
 
         Raises:
             NotImplementedError: Always, because ``BaseTable`` lacks an
@@ -377,35 +391,56 @@ class BaseTable(TableRecord, TableFields):
         """
         raise NotImplementedError("Use RowTable or ColumnTable")
 
+    @overload
     @classmethod
-    def parse_records(
-        cls: type[TableT],
+    def parse_as(
+        cls,
         datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT],
         *,
         context: Mapping[str, Any] | ParseContext | None = None,
         error_mode: str = "first",
-    ) -> list[TableT]:
-        """Parse a table and return validated schema records.
+    ) -> list[OutputT]: ...
 
-        ``parse()`` remains the high-level API and may return output-model
-        objects when ``output_model`` or ``build_output()`` is configured.
-        ``parse_records()`` is for callers and type checkers that specifically
-        want instances of the schema class before output conversion.
+    @overload
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: None = None,
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[Any]: ...
+
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT] | None = None,
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT] | list[Any]:
+        """Parse a table and convert each validated record.
 
         Args:
             datatable: Raw string rows or source-aware ``TableData``.
+            output_model: Optional callable receiving record fields as keyword
+                arguments. When omitted, use configured output hooks.
             context: Optional project data or existing parse context.
             error_mode: ``"first"`` or ``"collect"``.
 
         Returns:
-            Validated schema record instances.
+            Converted output objects.
 
         Raises:
             NotImplementedError: Always, because ``BaseTable`` lacks an
                 orientation.
 
-        !!! info
-            Concrete orientation classes implement this shared contract.
+        !!! warning
+            Use ``RowTable`` or ``ColumnTable``. This base method documents the
+            common signature only.
 
         """
         raise NotImplementedError("Use RowTable or ColumnTable")
@@ -489,11 +524,12 @@ class BaseTable(TableRecord, TableFields):
             context: Parse context for the current operation.
 
         Returns:
-            Public object returned by ``parse`` for this record.
+            Public object returned by ``parse_as()`` for this record.
 
-        !!! warning
-            ``parse_records`` bypasses this hook intentionally and returns the
-            schema record itself.
+        !!! info
+            ``parse()`` returns schema records without calling this hook.
+            ``parse_as()`` uses it only when no explicit output model is
+            supplied.
 
         """
         output_model = cls.__schema_plan__.hooks.output_model
@@ -595,7 +631,7 @@ class BaseTable(TableRecord, TableFields):
     def _validate_table_labels(
         cls,
         label_cells: Sequence[TableCell],
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
     ) -> None:
         """Validate unknown labels and canonical/alias duplication.
 
@@ -669,7 +705,7 @@ class BaseTable(TableRecord, TableFields):
         *,
         parse_context: ParseContext,
         item_id: Any | None,
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
     ) -> tuple[type[BaseTable] | None, dict[str, Any]]:
         """Select one record schema and return parsed selector values.
 
@@ -740,7 +776,7 @@ class BaseTable(TableRecord, TableFields):
         cells_by_label: Mapping[str, TableCell],
         *,
         item_id: Any | None,
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
     ) -> dict[str, Any]:
         """Apply policy to values belonging to another selected variant.
 
@@ -845,13 +881,17 @@ class BaseTable(TableRecord, TableFields):
     @staticmethod
     def _report(
         error: TableError,
-        errors: list[TableError] | None,
+        errors: DiagnosticCollector,
+        *,
+        allow_warning: bool = False,
     ) -> object:
         """Raise immediately or append one recoverable diagnostic.
 
         Args:
             error: Structured diagnostic to report.
-            errors: ``None`` for fail-fast mode or a list for collect mode.
+            errors: Collector containing the active error mode and diagnostics.
+            allow_warning: Whether a warning may continue without producing a
+                value. Only validation hooks enable this path.
 
         Returns:
             Internal invalid sentinel when the error is collected.
@@ -864,17 +904,25 @@ class BaseTable(TableRecord, TableFields):
             only the invalid value or record.
 
         """
-        if errors is None:
+        if error.severity is DiagnosticSeverity.WARNING and allow_warning:
+            if errors.mode is ErrorMode.FIRST:
+                warnings.warn(TalikaWarning(error.diagnostic), stacklevel=4)
+                return _INVALID
+            errors.items.append(error)
+            return _INVALID
+        if error.severity is DiagnosticSeverity.WARNING:
+            error = TableError.from_diagnostic(error_diagnostic(error.diagnostic))
+        if errors.mode is ErrorMode.FIRST:
             raise error
-        errors.append(error)
+        errors.items.append(error)
         return _INVALID
 
     @staticmethod
-    def _raise_collected(errors: list[TableError] | None) -> None:
+    def _raise_collected(errors: DiagnosticCollector) -> None:
         """Raise the public aggregate after all safe validation has run.
 
         Args:
-            errors: Optional collected diagnostic list.
+            errors: Active lifecycle diagnostic collector.
 
         Raises:
             TableErrors: If ``errors`` contains one or more diagnostics.
@@ -884,8 +932,8 @@ class BaseTable(TableRecord, TableFields):
             so users do not receive noisy secondary failures.
 
         """
-        if errors:
-            raise TableErrors(errors)
+        if errors.errors:
+            raise TableErrors(errors.items)
 
     @classmethod
     def _prepare_table(
@@ -963,7 +1011,7 @@ class BaseTable(TableRecord, TableFields):
         parse_context: ParseContext,
         item_id: Any | None,
         source_uri: str | None = None,
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
     ) -> Any:
         """Resolve one declared field from a present or missing cell.
 
@@ -1012,7 +1060,7 @@ class BaseTable(TableRecord, TableFields):
                 factory_context = DefaultContext(
                     schema=cls,
                     field_name=declared.name,
-                    field_label=declared.label,
+                    field_label=cast(str, declared.label),
                     item_id=item_id,
                     user_data=parse_context.user_data,
                     source_uri=source_uri,
@@ -1048,7 +1096,7 @@ class BaseTable(TableRecord, TableFields):
 
         if cell.value == "":
             empty_policy = cls.__schema_plan__.fields_by_name[declared.name].empty
-            if declared.required and not declared.parse_empty:
+            if declared.required:
                 return cls._report(
                     TableError.from_cell(
                         "Required field has an empty value",
@@ -1084,7 +1132,7 @@ class BaseTable(TableRecord, TableFields):
                     ),
                     errors,
                 )
-            if not declared.parse_empty:
+            if empty_policy is not EmptyPolicy.PARSE:
                 return ""
 
         if declared.parser is None:
@@ -1093,7 +1141,7 @@ class BaseTable(TableRecord, TableFields):
         cell_context = CellContext(
             schema=cls,
             field_name=declared.name,
-            field_label=declared.label,
+            field_label=cast(str, declared.label),
             row=cell.source_row,
             column=cell.source_column,
             item_id=item_id,
@@ -1163,7 +1211,7 @@ class BaseTable(TableRecord, TableFields):
         value: Any,
         cell: TableCell,
         declared: Field,
-        errors: list[TableError] | None,
+        errors: DiagnosticCollector,
     ) -> bool:
         """Require a parsed identity value that can safely key indexes."""
         try:
@@ -1187,7 +1235,7 @@ class BaseTable(TableRecord, TableFields):
     def _reject_duplicates(
         cls,
         label_cells: Sequence[TableCell],
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
     ) -> None:
         """Reject repeated table labels using original source locations.
 
@@ -1225,7 +1273,7 @@ class BaseTable(TableRecord, TableFields):
     def _validate_required_presence(
         cls,
         labels: Sequence[str],
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
         *,
         source_uri: str | None = None,
     ) -> None:
@@ -1272,7 +1320,7 @@ class BaseTable(TableRecord, TableFields):
         *,
         parse_context: ParseContext,
         item_id: Any | None,
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
         parsed_values: Mapping[str, Any] | None = None,
         parsed_sources: Mapping[str, TableCell] | None = None,
     ) -> tuple[bool, dict[str, Any], dict[str, TableCell], Any | None]:
@@ -1360,17 +1408,19 @@ class BaseTable(TableRecord, TableFields):
         cls,
         records: list[BaseTable],
         parse_context: ParseContext,
-        errors: list[TableError] | None = None,
+        errors: DiagnosticCollector,
         *,
         convert_output: bool = True,
+        output_model: Callable[..., Any] | None = None,
     ) -> list[Any]:
         """Run reference resolution, validation, and output conversion.
 
         Args:
             records: Parsed schema records.
             parse_context: Parse context for the current operation.
-            errors: Optional collection sink for recoverable diagnostics.
+            errors: Lifecycle diagnostic collector.
             convert_output: Whether to call output builders.
+            output_model: Explicit callable applied to every converted record.
 
         Returns:
             Schema records or converted output objects.
@@ -1400,9 +1450,24 @@ class BaseTable(TableRecord, TableFields):
         if not convert_output:
             return records
 
-        converted = build_outputs(cast(Any, cls), records, parse_context, errors)
+        converted = build_outputs(
+            cast(Any, cls),
+            records,
+            parse_context,
+            errors,
+            output_model=output_model,
+        )
         cls._raise_collected(errors)
         return converted
+
+    @classmethod
+    def _has_configured_output(cls) -> bool:
+        """Return whether this schema family declares any output conversion."""
+        plans = (cls.__schema_plan__, *cls.__schema_plan__.variants.values())
+        return any(
+            plan.hooks.output_model is not None or plan.hooks.build_output is not None
+            for plan in plans
+        )
 
 
 class RowTable(BaseTable):
@@ -1422,13 +1487,13 @@ class RowTable(BaseTable):
 
     @classmethod
     def parse(
-        cls,
+        cls: type[TableT],
         datatable: RawTable | TableData,
         *,
         context: Mapping[str, Any] | ParseContext | None = None,
         error_mode: str = "first",
-    ) -> list[Any]:
-        """Parse a row-oriented table into validated records or outputs.
+    ) -> list[TableT]:
+        """Parse a row-oriented table into validated schema records.
 
         Args:
             datatable: Raw rows or source-aware ``TableData``.
@@ -1436,12 +1501,23 @@ class RowTable(BaseTable):
             error_mode: ``"first"`` or ``"collect"``.
 
         Returns:
-            Public output objects, including output-model conversion when
-            configured.
+            Validated instances of this row schema. Configured output models
+            and builders are intentionally not called.
+
+        Raises:
+            ValueError: If ``error_mode`` is unsupported.
+            SchemaDefinitionError: If the schema family is invalid.
+            TableError: If the first error-severity failure is found.
+            TableErrors: If collect mode finds one or more error-severity
+                failures.
 
         !!! info
             The first row supplies labels. Each following row is parsed as one
             record using those labels.
+
+        !!! note
+            Warning-severity validation diagnostics are emitted as
+            ``TalikaWarning`` and do not discard the records.
 
         """
         cls._validate_error_mode(error_mode)
@@ -1451,7 +1527,89 @@ class RowTable(BaseTable):
                 datatable,
                 context=context,
                 error_mode=error_mode,
+                convert_output=False,
+            ),
+            schema_name=cls.__schema_plan__.display_name,
+            source_uri=(
+                datatable.source_uri if isinstance(datatable, TableData) else None
+            ),
+        )
+
+    @overload
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT],
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT]: ...
+
+    @overload
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: None = None,
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[Any]: ...
+
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT] | None = None,
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT] | list[Any]:
+        """Parse row records and convert them into public output objects.
+
+        Args:
+            datatable: Raw rows or source-aware ``TableData``.
+            output_model: Optional callable receiving every parsed field as a
+                keyword argument. When omitted, each record uses its configured
+                ``output_model`` or custom ``build_output()`` hook.
+            context: Optional project data or existing parse context.
+            error_mode: ``"first"`` or ``"collect"``.
+
+        Returns:
+            Objects created after parsing, references, and validation finish.
+            Supplying a callable produces ``list[OutputT]``.
+
+        Raises:
+            TypeError: If ``output_model`` is not callable.
+            ValueError: If no explicit or configured conversion exists.
+            TableError: If parsing, validation, or output construction fails.
+            TableErrors: If collect mode finds multiple failures.
+
+        !!! info
+            An explicit callable overrides configured base and variant output
+            hooks for this call.
+
+        !!! note
+            Warning-severity validation diagnostics are emitted as
+            ``TalikaWarning`` before converted objects are returned.
+
+        """
+        cls._validate_error_mode(error_mode)
+        if output_model is not None and not callable(output_model):
+            raise TypeError("output_model must be callable")
+        if output_model is None and not cls._has_configured_output():
+            raise ValueError(
+                "parse_as() requires an output model or custom build_output()"
+            )
+        return raising_result(
+            lambda: parse_row_table(
+                cast(Any, cls),
+                datatable,
+                context=context,
+                error_mode=error_mode,
                 convert_output=True,
+                output_model=output_model,
             ),
             schema_name=cls.__schema_plan__.display_name,
             source_uri=(
@@ -1470,11 +1628,23 @@ class RowTable(BaseTable):
 
         Output models and custom output builders are deliberately skipped.
         Invalid results contain no partial records.
+
+        Args:
+            datatable: Raw rows or source-aware ``TableData``.
+            context: Optional project data or existing parse context.
+
+        Returns:
+            Complete schema records and ordered diagnostics. Warning-only
+            results are valid and retain their records.
+
+        Raises:
+            SchemaDefinitionError: If the schema family is invalid.
+
         """
         source_uri = datatable.source_uri if isinstance(datatable, TableData) else None
         return non_raising_result(
             lambda: cast(
-                list[TableT],
+                LifecycleOutcome[TableT],
                 parse_row_table(
                     cast(Any, cls),
                     datatable,
@@ -1485,47 +1655,6 @@ class RowTable(BaseTable):
             ),
             schema_name=cls.__schema_plan__.display_name,
             source_uri=source_uri,
-        )
-
-    @classmethod
-    def parse_records(
-        cls: type[TableT],
-        datatable: RawTable | TableData,
-        *,
-        context: Mapping[str, Any] | ParseContext | None = None,
-        error_mode: str = "first",
-    ) -> list[TableT]:
-        """Parse a row-oriented table and return schema record instances.
-
-        Args:
-            datatable: Raw rows or source-aware ``TableData``.
-            context: Optional project data or existing parse context.
-            error_mode: ``"first"`` or ``"collect"``.
-
-        Returns:
-            Validated instances of the schema class.
-
-        !!! warning
-            Output-model conversion is skipped so callers can inspect record
-            source metadata and schema attributes directly.
-
-        """
-        cls._validate_error_mode(error_mode)
-        return raising_result(
-            lambda: cast(
-                list[TableT],
-                parse_row_table(
-                    cast(Any, cls),
-                    datatable,
-                    context=context,
-                    error_mode=error_mode,
-                    convert_output=False,
-                ),
-            ),
-            schema_name=cls.__schema_plan__.display_name,
-            source_uri=(
-                datatable.source_uri if isinstance(datatable, TableData) else None
-            ),
         )
 
 
@@ -1545,13 +1674,13 @@ class ColumnTable(BaseTable):
 
     @classmethod
     def parse(
-        cls,
+        cls: type[TableT],
         datatable: RawTable | TableData,
         *,
         context: Mapping[str, Any] | ParseContext | None = None,
         error_mode: str = "first",
-    ) -> list[Any]:
-        """Parse a column-oriented table into validated records or outputs.
+    ) -> list[TableT]:
+        """Parse a column-oriented table into validated schema records.
 
         Args:
             datatable: Raw rows or source-aware ``TableData``.
@@ -1559,12 +1688,23 @@ class ColumnTable(BaseTable):
             error_mode: ``"first"`` or ``"collect"``.
 
         Returns:
-            Public output objects, including output-model conversion when
-            configured.
+            Validated instances of this column schema. Configured output models
+            and builders are intentionally not called.
+
+        Raises:
+            ValueError: If ``error_mode`` is unsupported.
+            SchemaDefinitionError: If the schema family is invalid.
+            TableError: If the first error-severity failure is found.
+            TableErrors: If collect mode finds one or more error-severity
+                failures.
 
         !!! info
             The first column supplies labels. Each following column is parsed
             as one record.
+
+        !!! note
+            Warning-severity validation diagnostics are emitted as
+            ``TalikaWarning`` and do not discard the records.
 
         """
         cls._validate_error_mode(error_mode)
@@ -1574,7 +1714,89 @@ class ColumnTable(BaseTable):
                 datatable,
                 context=context,
                 error_mode=error_mode,
+                convert_output=False,
+            ),
+            schema_name=cls.__schema_plan__.display_name,
+            source_uri=(
+                datatable.source_uri if isinstance(datatable, TableData) else None
+            ),
+        )
+
+    @overload
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT],
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT]: ...
+
+    @overload
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: None = None,
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[Any]: ...
+
+    @classmethod
+    def parse_as(
+        cls,
+        datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT] | None = None,
+        *,
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT] | list[Any]:
+        """Parse column records and convert them into public output objects.
+
+        Args:
+            datatable: Raw rows or source-aware ``TableData``.
+            output_model: Optional callable receiving every parsed field as a
+                keyword argument. When omitted, each record uses its configured
+                ``output_model`` or custom ``build_output()`` hook.
+            context: Optional project data or existing parse context.
+            error_mode: ``"first"`` or ``"collect"``.
+
+        Returns:
+            Objects created after parsing, references, and validation finish.
+            Supplying a callable produces ``list[OutputT]``.
+
+        Raises:
+            TypeError: If ``output_model`` is not callable.
+            ValueError: If no explicit or configured conversion exists.
+            TableError: If parsing, validation, or output construction fails.
+            TableErrors: If collect mode finds multiple failures.
+
+        !!! info
+            An explicit callable overrides configured base and variant output
+            hooks for this call.
+
+        !!! note
+            Warning-severity validation diagnostics are emitted as
+            ``TalikaWarning`` before converted objects are returned.
+
+        """
+        cls._validate_error_mode(error_mode)
+        if output_model is not None and not callable(output_model):
+            raise TypeError("output_model must be callable")
+        if output_model is None and not cls._has_configured_output():
+            raise ValueError(
+                "parse_as() requires an output model or custom build_output()"
+            )
+        return raising_result(
+            lambda: parse_column_table(
+                cast(Any, cls),
+                datatable,
+                context=context,
+                error_mode=error_mode,
                 convert_output=True,
+                output_model=output_model,
             ),
             schema_name=cls.__schema_plan__.display_name,
             source_uri=(
@@ -1593,11 +1815,23 @@ class ColumnTable(BaseTable):
 
         Output models and custom output builders are deliberately skipped.
         Invalid results contain no partial records.
+
+        Args:
+            datatable: Raw rows or source-aware ``TableData``.
+            context: Optional project data or existing parse context.
+
+        Returns:
+            Complete schema records and ordered diagnostics. Warning-only
+            results are valid and retain their records.
+
+        Raises:
+            SchemaDefinitionError: If the schema family is invalid.
+
         """
         source_uri = datatable.source_uri if isinstance(datatable, TableData) else None
         return non_raising_result(
             lambda: cast(
-                list[TableT],
+                LifecycleOutcome[TableT],
                 parse_column_table(
                     cast(Any, cls),
                     datatable,
@@ -1608,45 +1842,4 @@ class ColumnTable(BaseTable):
             ),
             schema_name=cls.__schema_plan__.display_name,
             source_uri=source_uri,
-        )
-
-    @classmethod
-    def parse_records(
-        cls: type[TableT],
-        datatable: RawTable | TableData,
-        *,
-        context: Mapping[str, Any] | ParseContext | None = None,
-        error_mode: str = "first",
-    ) -> list[TableT]:
-        """Parse a column-oriented table and return schema record instances.
-
-        Args:
-            datatable: Raw rows or source-aware ``TableData``.
-            context: Optional project data or existing parse context.
-            error_mode: ``"first"`` or ``"collect"``.
-
-        Returns:
-            Validated instances of the schema class.
-
-        !!! warning
-            Output-model conversion is skipped so callers can inspect source
-            metadata, item IDs, and intermediate schema attributes directly.
-
-        """
-        cls._validate_error_mode(error_mode)
-        return raising_result(
-            lambda: cast(
-                list[TableT],
-                parse_column_table(
-                    cast(Any, cls),
-                    datatable,
-                    context=context,
-                    error_mode=error_mode,
-                    convert_output=False,
-                ),
-            ),
-            schema_name=cls.__schema_plan__.display_name,
-            source_uri=(
-                datatable.source_uri if isinstance(datatable, TableData) else None
-            ),
         )

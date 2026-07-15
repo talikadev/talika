@@ -230,8 +230,8 @@ The policies are:
 - `empty="none"` returns `None`
 - `empty="error"` rejects `""`
 
-Declaring `empty="parse"` without a callable parser is invalid and fails
-immediately when the field is declared.
+Declaring `empty="parse"` without an explicit or inferred parser is invalid and
+fails when the schema is created.
 
 ```python title="Parsing empty cells with policies"
 --8<-- "docs_src/guides/basic/missing-empty-defaults.py:empty-policies-parse"
@@ -257,27 +257,23 @@ the `strict value` label is present and its cell is blank, Talika rejects it:
     `parse` when your parser owns blank syntax, and `error` when the field may
     be omitted but must not be written blank.
 
-## Required Fields and Empty Parsing
+## Required Fields Always Reject Blanks
 
-By default, a required field rejects an explicit empty cell. There is one
-important exception: if the field explicitly allows empty parsing, the parser
-can decide what the blank means.
+`required=True` is authoritative. A required field rejects an explicit empty
+cell before any parser is called. Required fields cannot use `empty="raw"`,
+`empty="none"`, or `empty="parse"`; `empty="error"` is implied.
 
-```python title="A required field that parses an empty cell"
+```python title="A required field with an empty-aware parser"
 --8<-- "docs_src/guides/basic/missing-empty-defaults.py:required-parse-empty"
 ```
 
-```bash { .talika-terminal title="Required empty parsed by the field" .speed-3}
+```text title="Required blank diagnostic"
 --8<-- "docs_src/guides/basic/missing-empty-defaults.py:required-parse-empty-output"
 ```
 
-This should be rare. Use it when an empty string is a real authored syntax for
-the field, not as a way to hide incomplete required data.
-
-!!! warning "Be deliberate with required blank parsing"
-    Most required fields should reject blank cells. If a required field parses
-    blanks, document that table vocabulary clearly in the schema or surrounding
-    tests.
+If blank text has domain meaning, make the field optional and choose
+`empty="parse"` explicitly. Do not weaken a required field through a permissive
+parser.
 
 ## Default Errors and Invalid Declarations
 

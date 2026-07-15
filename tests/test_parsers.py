@@ -22,7 +22,7 @@ from talika import (
 
 def parse_one(parser, value):
     class ValueTable(RowTable):
-        result = field("value", parser=parser)
+        result = field("value", parser=parser, empty="parse")
 
     return ValueTable.parse([["value"], [value]])[0].result
 

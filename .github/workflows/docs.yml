@@ -32,7 +32,8 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
-      - run: uv run --group docs zensical build --strict
+      - run: uv sync --locked --group docs
+      - run: uv run --no-sync zensical build --strict
       - uses: actions/upload-pages-artifact@v4
         with:
           path: docs_site

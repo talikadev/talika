@@ -20,6 +20,102 @@ from .fields import Parser
 from .parsers import boolean, decimal, floating, integer, optional
 
 
+def annotation_accepts_raw_text(annotation: Any) -> bool:
+    """Return whether arbitrary unparsed cell text fits an annotation.
+
+    Args:
+        annotation: Resolved annotation attached to a schema field.
+
+    Returns:
+        ``True`` for ``Any``, ``object``, ``str``, or a union containing one
+        of those types. Literal annotations return ``False`` because an
+        arbitrary cell is not guaranteed to match their finite vocabulary.
+
+
+    !!! info
+        This helper validates only Talika's raw-text path. It does not inspect
+        or constrain values returned by explicit project parsers.
+
+    """
+    if annotation in (Any, object, str):
+        return True
+    origin = get_origin(annotation)
+    if origin in (Union, types.UnionType):
+        return any(annotation_accepts_raw_text(item) for item in get_args(annotation))
+    return False
+
+
+def annotation_accepts_value(annotation: Any, value: Any) -> bool:
+    """Return whether one framework-created value fits an annotation.
+
+    Args:
+        annotation: Resolved field annotation.
+        value: Missing, empty-policy, or static-default value created directly
+            by Talika.
+
+    Returns:
+        Whether the value matches common runtime-checkable annotations.
+        Unsupported typing constructs are treated conservatively as not
+        matching unless they expose a runtime origin that accepts the value.
+
+
+    !!! warning
+        This is deliberately not a general-purpose Python type checker. It is
+        used only for declaration paths controlled by the framework.
+
+    """
+    if annotation in (Any, object):
+        return True
+    if annotation is None or annotation is type(None):
+        return value is None
+
+    origin = get_origin(annotation)
+    arguments = get_args(annotation)
+    if origin in (Union, types.UnionType):
+        return any(annotation_accepts_value(item, value) for item in arguments)
+    if origin is Literal:
+        return any(
+            type(value) is type(allowed) and value == allowed for allowed in arguments
+        )
+    if origin is tuple:
+        if not isinstance(value, tuple):
+            return False
+        if len(arguments) == 2 and arguments[1] is Ellipsis:
+            return all(annotation_accepts_value(arguments[0], item) for item in value)
+        return len(value) == len(arguments) and all(
+            annotation_accepts_value(item_annotation, item)
+            for item_annotation, item in zip(arguments, value, strict=True)
+        )
+    if origin in (list, set, frozenset):
+        if not isinstance(value, origin):
+            return False
+        return not arguments or all(
+            annotation_accepts_value(arguments[0], item) for item in value
+        )
+    if origin is dict:
+        if not isinstance(value, dict):
+            return False
+        if len(arguments) != 2:
+            return True
+        key_type, value_type = arguments
+        return all(
+            annotation_accepts_value(key_type, key)
+            and annotation_accepts_value(value_type, item)
+            for key, item in value.items()
+        )
+    if origin is not None:
+        try:
+            return isinstance(value, origin)
+        except TypeError:
+            return False
+    if annotation in (str, int, float, bool, bytes):
+        return type(value) is annotation
+    try:
+        return isinstance(value, annotation)
+    except TypeError:
+        return False
+
+
 def parser_for_annotation(annotation: Any) -> Parser | None:
     """Return a parser for one supported annotation.
 
@@ -29,7 +125,9 @@ def parser_for_annotation(annotation: Any) -> Parser | None:
 
     Returns:
         A parser compatible with ``field(parser=...)`` when the annotation is
-        supported, or ``None`` when the value should be left as the raw string.
+        supported, or ``None`` when Talika cannot infer a conversion. Schema
+        compilation then verifies whether an unparsed string is compatible
+        with the annotation.
 
     !!! info
         Supported annotations are ``str``, ``int``, ``float``, ``bool``,
@@ -44,8 +142,8 @@ def parser_for_annotation(annotation: Any) -> Parser | None:
     !!! example
         ```python
         class UserTable(RowTable):
-            age: int = field("age")
-            reviewer: int | None = field("reviewer")
+            age: int = field("age", required=True)
+            reviewer: int | None = field("reviewer", empty="parse")
         ```
 
     """

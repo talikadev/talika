@@ -6,6 +6,98 @@ stable release, additions may refine APIs while preserving the documented
 
 ## Unreleased
 
+## 0.4.0
+
+Talika 0.4 makes field outcomes and parsing return types explicit. Schema
+records are now the stable parsing result, output conversion has its own API,
+and warning-severity validation no longer discards valid records.
+
+### Strict field contracts
+
+- Allow ordinary `field()` declarations to omit their label and use the Python
+  attribute name. Keep explicit labels mandatory for identity, reference, and
+  discriminator helpers.
+- Make required fields reject missing and blank values before parser execution.
+  Required fields cannot use defaults or contradictory empty policies.
+- Give optional fields authoritative `raw`, `none`, `parse`, and `error`
+  policies. A blank reaches `optional()` only with `empty="parse"`.
+- Remove the hidden `parse_empty` parser contract from declarations, compiled
+  plans, inferred parsers, and runtime parsing.
+- Reject framework-controlled annotation paths that can return a value outside
+  the resolved annotation. Explicit parsers and default factories remain
+  trusted extension points.
+- Expose resolved implicit labels and effective empty policies through schema
+  introspection.
+
+### Parsing and output APIs
+
+- Make `Schema.parse()` and `parse_table()` always return schema records in row
+  and column orientations, even when output hooks are configured.
+- Add `Schema.parse_as()`, `parse_table_as()`, and `talika.parse_as()` for
+  explicit callables or configured `output_model` and `build_output()` hooks.
+- Let an explicit output callable override base and variant output hooks while
+  preserving source-aware `output_failed` diagnostics.
+- Remove `parse_records()`, `parse_table_records()`, and their pytest fixture
+  and package-level aliases.
+
+### Warning correction
+
+- Add public `TalikaWarning`, containing the structured warning `Diagnostic`.
+- Keep complete records when record or table validation reports warnings only.
+- Return warnings with valid records from `validate()`, and emit warnings
+  through Python's warnings system from `parse()` and `parse_as()`.
+- Preserve mixed warnings and errors in discovery order while withholding
+  partial records and raising only error-severity failures.
+
+### Release verification
+
+- Use locked dependency installation in normal CI and release jobs, with
+  no-sync test execution after minimum or current dependencies are installed.
+- Test Python 3.10 through 3.13 on Linux and Windows, plus declared minimum and
+  current dependency sets.
+- Verify coverage, Ruff, formatting, strict mypy, strict documentation, and the
+  exact wheel and source distribution files before publishing.
+- Smoke-test core, CLI, Pydantic, and pytest-plugin installations in isolated
+  environments and run `pip check` in each one.
+
+### Documentation
+
+- Separate the guides into parsing schema records and converting records into
+  output models.
+- Rewrite missing/empty, typed-field, dataclass/Pydantic, variant builder,
+  diagnostics, pytest-bdd, and migration examples around the 0.4 contracts.
+- Add complete Google-style API docstrings for changed public helpers and the
+  warning type so the reference pages render the new behavior.
+
+!!! warning "Migration"
+    Make a typed field required, or describe every optional result:
+
+    ```python
+    # Before
+    age: int = field("Age")
+
+    # After: required
+    age: int = field("Age", required=True)
+
+    # After: optional
+    age: int | None = field("Age", empty="none")
+    ```
+
+    Replace record aliases and make output conversion explicit:
+
+    ```python
+    # Before
+    users = UserTable.parse(table)
+    records = UserTable.parse_records(table)
+
+    # After
+    records = UserTable.parse(table)
+    users = UserTable.parse_as(table)
+
+    # Or choose a target for one call
+    users = UserTable.parse_as(table, User)
+    ```
+
 ### Breaking parser correction
 
 - Narrow the default `boolean()` vocabulary to `true` and `false`. Matching

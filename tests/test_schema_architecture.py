@@ -66,14 +66,16 @@ def test_subclass_configuration_is_independent_from_frozen_parent():
     assert BaseRows.__schema_plan__ is parent_plan
     assert BaseRows.value.label == "value"
     assert SpecializedRows.value.label == "special value"
-    assert SpecializedRows.parse([["special value"], ["kept"]]) == ["KEPT"]
+    record = SpecializedRows.parse([["special value"], ["kept"]])[0]
+    assert record.value == "kept"
+    assert SpecializedRows.parse_as([["special value"], ["kept"]]) == ["KEPT"]
 
 
 def test_parsed_records_remain_mutable():
     class UserTable(RowTable):
         name = field("name")
 
-    record = UserTable.parse_records([["name"], ["Alice"]])[0]
+    record = UserTable.parse([["name"], ["Alice"]])[0]
     record.name = "Bob"
 
     assert record.name == "Bob"
@@ -83,7 +85,7 @@ def test_parsed_records_remain_mutable():
     "reserved_name",
     [
         "parse",
-        "parse_records",
+        "parse_as",
         "describe",
         "variant",
         "variant_for",
@@ -107,6 +109,15 @@ def test_parsed_records_remain_mutable():
 def test_fields_cannot_shadow_framework_attributes(reserved_name):
     with pytest.raises(SchemaDefinitionError, match="reserved"):
         type("InvalidRows", (RowTable,), {reserved_name: field(reserved_name)})
+
+
+def test_removed_parse_records_name_is_available_to_schema_fields():
+    class LegacyVocabulary(RowTable):
+        parse_records = field()
+
+    record = LegacyVocabulary.parse([["parse_records"], ["project value"]])[0]
+
+    assert record.parse_records == "project value"
 
 
 def test_non_field_cannot_shadow_an_inherited_field():
@@ -290,11 +301,13 @@ def test_internal_plan_types_are_not_top_level_exports():
     import talika
 
     assert not hasattr(talika, "SchemaPlan")
+    assert not hasattr(talika, "parse_table_records")
     assert RowTable.__module__ == "talika.schema"
 
     class UserTable(RowTable):
         name = field("name", empty="none")
 
+    assert not hasattr(UserTable, "parse_records")
     plan = UserTable.__schema_plan__
     assert plan.orientation.value == "row"
     assert plan.policies.unknown_fields.value == "forbid"

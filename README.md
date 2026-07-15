@@ -99,7 +99,7 @@ from talika import RowTable, boolean, field, split
 
 
 class UserTable(RowTable):
-    name = field("name", required=True)
+    name = field(required=True)
     age: int = field("age", required=True)
     roles = field("roles", parser=split(","))
     active = field("active", parser=boolean(), default=True)
@@ -124,6 +124,11 @@ assert users[0].age == 27
 assert users[0].roles == ["Developer", "Manager"]
 assert users[0].active is True
 ```
+
+`parse()` always returns `UserTable` records. When a boundary needs a
+dataclass, Pydantic model, or another callable output type, use
+`UserTable.parse_as(datatable, User)` instead. Omitting the target uses a
+configured `output_model` or `build_output()` hook.
 
 Bad input fails at the table boundary with source-aware diagnostics:
 
@@ -156,8 +161,8 @@ one record—useful when each item has many attributes:
 | Published | true    | false   |
 ```
 
-Both shapes use the same field declarations, parsers, validation hooks, output
-models, and source-aware errors. Read
+Both shapes use the same field declarations, parsers, validation hooks,
+`parse_as()` output conversion, and source-aware errors. Read
 [choosing a table shape](https://talikadev.github.io/talika/learn/choosing-table-shape/)
 for the trade-offs.
 

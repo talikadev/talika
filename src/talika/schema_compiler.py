@@ -7,8 +7,13 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, get_type_hints
 
-from .annotations import parser_for_annotation
+from .annotations import (
+    annotation_accepts_raw_text,
+    annotation_accepts_value,
+    parser_for_annotation,
+)
 from .errors import SchemaDefinitionError
+from .fields import MISSING as _FIELD_MISSING
 from .fields import Field
 from .schema_plan import (
     CompiledField,
@@ -27,7 +32,7 @@ _INVALID = object()
 RESERVED_FIELD_NAMES = frozenset(
     {
         "parse",
-        "parse_records",
+        "parse_as",
         "validate",
         "describe",
         "variant",
@@ -116,17 +121,109 @@ def _origin_name(declared: Field) -> str:
 
 
 def resolve_annotations(cls: type, fields: Mapping[str, Field]) -> None:
-    """Infer supported field parsers without cross-field resolution failure."""
+    """Infer parsers and validate framework-controlled annotation paths.
+
+    Args:
+        cls: Schema class whose annotations should be resolved.
+        fields: Bound field declarations collected for the schema.
+
+    Raises:
+        SchemaDefinitionError: If Talika can prove that a missing, empty,
+            defaulted, or raw-text path contradicts the resolved annotation.
+
+
+    !!! info
+        Explicit parsers and default factories remain trusted extension
+        points. This validation covers only values Talika creates directly.
+
+    """
     for field_name, declared in fields.items():
-        if declared.parser is not None:
-            continue
         annotation = _resolve_field_annotation(cls, field_name)
         if annotation is _INVALID:
+            if declared.empty == "parse" and declared.parser is None:
+                raise SchemaDefinitionError(
+                    f"Field {field_name!r} uses empty='parse' but has no explicit "
+                    "parser and its annotation cannot provide one; add parser=... "
+                    "or choose another empty policy",
+                    schema=cls.__name__,
+                )
             continue
-        inferred = parser_for_annotation(annotation)
-        if inferred is not None:
-            declared.parser = inferred
-            declared.parse_empty = bool(getattr(inferred, "parse_empty", False))
+        explicit_parser = declared.parser is not None
+        if not explicit_parser:
+            inferred = parser_for_annotation(annotation)
+            if inferred is not None:
+                declared.parser = inferred
+        _validate_annotation_paths(cls, declared, annotation)
+
+
+def _validate_annotation_paths(cls: type, declared: Field, annotation: Any) -> None:
+    """Reject field outcomes that contradict one resolved annotation.
+
+    Args:
+        cls: Schema class receiving the field.
+        declared: Bound field declaration after parser inference.
+        annotation: Resolved Python annotation for the field.
+
+    Raises:
+        SchemaDefinitionError: If a framework-owned value path is incompatible
+            with ``annotation``.
+
+    """
+    name = declared.name
+    if (
+        not declared.required
+        and declared.default is _FIELD_MISSING
+        and declared.default_factory is _FIELD_MISSING
+        and not annotation_accepts_value(annotation, None)
+    ):
+        raise SchemaDefinitionError(
+            f"Field {name!r} may be missing and become None, but its annotation "
+            "does not allow None; use required=True, add a default, or include None "
+            "in the annotation",
+            schema=cls.__name__,
+        )
+    if declared.default is not _FIELD_MISSING and not annotation_accepts_value(
+        annotation, declared.default
+    ):
+        raise SchemaDefinitionError(
+            f"Field {name!r} default does not match its annotation; use a matching "
+            "default value or change the annotation",
+            schema=cls.__name__,
+        )
+    if (
+        not declared.required
+        and declared.empty == "raw"
+        and not annotation_accepts_value(annotation, "")
+    ):
+        raise SchemaDefinitionError(
+            f"Field {name!r} uses empty='raw' and may become a string, but its "
+            "annotation does not allow str; choose empty='none', empty='parse', "
+            "or empty='error'",
+            schema=cls.__name__,
+        )
+    if (
+        not declared.required
+        and declared.empty == "none"
+        and not annotation_accepts_value(annotation, None)
+    ):
+        raise SchemaDefinitionError(
+            f"Field {name!r} uses empty='none', but its annotation does not allow "
+            "None; include None in the annotation or choose another empty policy",
+            schema=cls.__name__,
+        )
+    if declared.empty == "parse" and declared.parser is None:
+        raise SchemaDefinitionError(
+            f"Field {name!r} uses empty='parse' but has no inferred or explicit "
+            "parser; add parser=... or choose another empty policy",
+            schema=cls.__name__,
+        )
+    if declared.parser is None and not annotation_accepts_raw_text(annotation):
+        raise SchemaDefinitionError(
+            f"Field {name!r} has no parser and would remain text, but its annotation "
+            "does not accept raw str values; add an explicit parser or use a "
+            "supported annotation",
+            schema=cls.__name__,
+        )
 
 
 def _resolve_field_annotation(cls: type, field_name: str) -> Any:
@@ -167,6 +264,11 @@ def compile_schema(cls: type, fields: Mapping[str, Field]) -> SchemaPlan:
     """Validate one schema class and return its immutable plan."""
     labels: dict[str, str] = {}
     for field_name, declared in fields.items():
+        if len(set(declared.labels)) != len(declared.labels):
+            raise SchemaDefinitionError(
+                f"Field {field_name!r} aliases must differ from its resolved label",
+                schema=cls.__name__,
+            )
         for label in declared.labels:
             if label in labels and labels[label] != field_name:
                 raise SchemaDefinitionError(
@@ -263,6 +365,15 @@ def compile_schema(cls: type, fields: Mapping[str, Field]) -> SchemaPlan:
             )
         hooks[hook_name] = hook
 
+    build_output_owner = next(
+        (owner for owner in cls.__mro__ if "build_output" in owner.__dict__),
+        None,
+    )
+    if build_output_owner is not None and build_output_owner.__dict__.get(
+        "__talika_framework_base__", False
+    ):
+        hooks["build_output"] = None
+
     reference_targets = {
         item.reference.target: by_name[item.reference.target]
         for item in compiled
@@ -299,6 +410,8 @@ def _compile_field(declared: Field) -> CompiledField:
     """Copy one declaration into immutable normalized metadata."""
     if declared._origin is None:
         raise RuntimeError("Cannot compile an unbound field")
+    if declared.label is None:
+        raise RuntimeError("Cannot compile a field before its label is resolved")
     return CompiledField(
         name=declared.name,
         origin=declared._origin,
@@ -308,7 +421,6 @@ def _compile_field(declared: Field) -> CompiledField:
         default=declared.default,
         default_factory=declared.default_factory,
         parser=declared.parser,
-        parse_empty=declared.parse_empty,
         empty=EmptyPolicy(declared.empty),
         is_id=declared.is_id,
         is_discriminator=declared.is_discriminator,

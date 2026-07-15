@@ -59,7 +59,7 @@ same row, and the blank `role` in the next row can be checked separately.
 
 !!! note "Collection is not a different contract"
     The schema still owns the same labels, parsers, defaults, empty-cell
-    policy, validators, references, and output conversion. `error_mode`
+    policy, validators, references, and optional `parse_as()` conversion. `error_mode`
     changes how failures are reported, not what the table means.
 
 ## Compare Fail-Fast and Collect Mode
@@ -94,8 +94,8 @@ numbered list of structured `TableError` objects.
 
 !!! warning "Collect mode is not best-effort parsing"
     Do not use collect mode when the caller expects usable output despite bad
-    input. If any diagnostic is collected, parsing raises `TableErrors` and no
-    result is returned.
+    input. If any error-severity diagnostic is collected, parsing raises
+    `TableErrors` and no result is returned. Warnings alone retain the records.
 
 ## Inspect the Aggregate
 
@@ -249,10 +249,10 @@ columns and include `item_id` because the table is column-shaped and has an
 `id_field`.
 
 Later phases use the same aggregate error channel after the earlier phases have
-succeeded. Record validation and output conversion can report more than one
-record-level failure. Whole-table validation usually reports one table-level
-failure, but in collect mode it is still wrapped into the same `TableErrors`
-shape.
+succeeded. Record validation and `parse_as()` output conversion can report more
+than one record-level failure. Whole-table validation usually reports one
+table-level failure, but in collect mode it is still wrapped into the same
+`TableErrors` shape.
 
 !!! note "One phase may be enough"
     A collected report does not need to include every possible future problem

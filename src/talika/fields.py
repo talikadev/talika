@@ -57,16 +57,15 @@ class Field:
     """Store one declared schema field and its conversion behavior.
 
     Attributes:
-        label: Canonical Gherkin data table label.
+        label: Canonical Gherkin data table label. ``None`` is accepted only
+            while an ordinary ``field()`` waits for its Python attribute name.
         aliases: Alternate accepted labels for evolving feature vocabulary.
         required: Whether the field must be present and non-empty.
         default: Static value used when an optional field is absent.
         default_factory: Context-aware factory used when an optional field is
             absent.
         parser: Optional callable used to convert non-empty cell values.
-        parse_empty: Whether explicit empty cells should still be sent to the
-            parser.
-        empty: Policy for explicit empty cells on optional fields.
+        empty: Effective policy for explicit empty cells.
         is_id: Whether this field identifies column-oriented records.
         is_discriminator: Whether this field selects record variants.
         variants: Declarative discriminator component mapping.
@@ -81,13 +80,12 @@ class Field:
 
     """
 
-    label: str
+    label: str | None
     aliases: tuple[str, ...] = ()
     required: bool = False
     default: Any = MISSING
     default_factory: DefaultFactory | object = MISSING
     parser: Parser | None = None
-    parse_empty: bool = False
     empty: str = "raw"
     is_id: bool = False
     is_discriminator: bool = False
@@ -136,7 +134,6 @@ class Field:
             default=self.default,
             default_factory=self.default_factory,
             parser=self.parser,
-            parse_empty=self.parse_empty,
             empty=self.empty,
             is_id=self.is_id,
             is_discriminator=self.is_discriminator,
@@ -166,6 +163,8 @@ class Field:
                 f"{self._owner.__name__}.{self.name}"
             )
         self.name = name
+        if self.label is None:
+            self.label = name
         self._owner = owner
         if self._origin is None:
             self._origin = (f"{owner.__module__}.{owner.__qualname__}", name)
@@ -221,32 +220,39 @@ class Field:
             preferred table vocabulary first.
 
         """
+        if self.label is None:
+            raise RuntimeError("Field label is unavailable before class binding")
         return (self.label, *self.aliases)
 
 
 def _validate_field_options(
-    label: str,
+    label: str | None,
     aliases: Sequence[str],
     *,
+    allow_implicit_label: bool = False,
     required: bool,
     default: Any,
     default_factory: DefaultFactory | object,
     parser: Parser | None = None,
-    empty: str = "raw",
-) -> tuple[str, ...]:
+    empty: str | None = None,
+) -> tuple[tuple[str, ...], str]:
     """Validate declaration options shared by field constructors.
 
     Args:
-        label: Canonical table label.
+        label: Canonical table label, or ``None`` for an implicit ordinary
+            field label.
         aliases: Alternate accepted labels.
+        allow_implicit_label: Whether ``None`` may be resolved from the Python
+            attribute name during class creation.
         required: Whether a value is required.
         default: Static default value or ``MISSING``.
         default_factory: Context-aware default factory or ``MISSING``.
         parser: Optional value parser.
-        empty: Explicit empty-cell policy.
+        empty: Explicit empty-cell policy, or ``None`` to choose ``"error"``
+            for required fields and ``"raw"`` for optional fields.
 
     Returns:
-        Aliases normalized to a tuple.
+        Aliases normalized to a tuple and the effective empty-cell policy.
 
     Raises:
         ValueError: If labels/defaults are internally contradictory.
@@ -257,9 +263,12 @@ def _validate_field_options(
         table data appear valid.
 
     """
-    if not isinstance(label, str):
+    if label is None:
+        if not allow_implicit_label:
+            raise TypeError("field label must be a string")
+    elif not isinstance(label, str):
         raise TypeError("field label must be a string")
-    if not label:
+    elif not label:
         raise ValueError("field label cannot be empty")
     if isinstance(aliases, (str, bytes, bytearray)) or not isinstance(
         aliases, Sequence
@@ -270,7 +279,9 @@ def _validate_field_options(
         raise TypeError("field aliases must be strings")
     if any(not alias for alias in normalized):
         raise ValueError("field aliases cannot be empty")
-    if label in normalized or len(set(normalized)) != len(normalized):
+    if (label is not None and label in normalized) or len(set(normalized)) != len(
+        normalized
+    ):
         raise ValueError("field aliases must be unique and differ from the label")
     if default is not MISSING and default_factory is not MISSING:
         raise ValueError("field cannot declare both default and default_factory")
@@ -280,10 +291,11 @@ def _validate_field_options(
         raise TypeError("default_factory must be callable")
     if parser is not None and not callable(parser):
         raise TypeError("parser must be callable")
-    if empty not in {"raw", "parse", "none", "error"}:
-        raise ValueError("empty must be 'raw', 'parse', 'none', or 'error'")
-    if empty == "parse" and parser is None:
-        raise ValueError("empty='parse' requires a parser")
+    if empty is not None and empty not in {"raw", "parse", "none", "error"}:
+        raise ValueError("empty must be 'raw', 'parse', 'none', 'error', or None")
+    if required and empty not in {None, "error"}:
+        raise ValueError("required fields only support empty='error'")
+    effective_empty = ("error" if required else "raw") if empty is None else empty
     if default is not MISSING:
         if isinstance(
             default, (MutableMapping, MutableSequence, MutableSet, bytearray)
@@ -297,50 +309,59 @@ def _validate_field_options(
             raise TypeError(
                 "unhashable static defaults are not allowed; use default_factory"
             ) from exc
-    return normalized
+    return normalized, effective_empty
 
 
 def field(
-    label: str,
+    label: str | None = None,
     *,
     required: bool = False,
     default: Any = MISSING,
     default_factory: DefaultFactory | object = MISSING,
     parser: Parser | None = None,
     aliases: Sequence[str] = (),
-    empty: str = "raw",
+    empty: str | None = None,
 ) -> Any:
     """Declare a row or column in a table schema.
 
-    Parsers normally do not receive explicit empty cells, preserving the
-    package distinction between an empty cell and a missing field. Parser
-    objects may opt into empty-cell handling by exposing ``parse_empty=True``.
+    The Python attribute name becomes the table label when ``label`` is
+    omitted. Empty cells are controlled only by ``empty``; parser objects do
+    not opt into blank handling implicitly.
 
     Args:
-        label: Canonical Gherkin data table label.
+        label: Canonical Gherkin data table label. When omitted, use the
+            Python attribute name.
         required: Whether the field must be present and non-empty.
         default: Static value used when the entire field is absent.
         default_factory: Factory called for an absent optional field.
         parser: Optional parser for non-empty values.
         aliases: Alternate accepted table labels.
-        empty: Policy for explicit empty cells. ``"raw"`` preserves the legacy
-            empty string, ``"parse"`` sends it through the parser, ``"none"``
-            returns ``None``, and ``"error"`` rejects it.
+        empty: Policy for explicit empty cells. When omitted, required fields
+            use ``"error"`` and optional fields use ``"raw"``. ``"parse"``
+            sends an empty string through the parser, ``"none"`` returns
+            ``None``, and ``"error"`` rejects it.
 
     Returns:
         A descriptor collected by ``RowTable`` or ``ColumnTable`` subclasses.
 
+    Raises:
+        TypeError: If labels, aliases, parsers, factories, or defaults have an
+            invalid runtime shape.
+        ValueError: If required/default/empty options contradict each other or
+            an empty policy is unknown.
+
     !!! example
         ```python
         class UserTable(RowTable):
-            name = field("name", required=True)
+            name = field(required=True)
             role = field("role", default="viewer", aliases=("type",))
         ```
 
     """
-    normalized_aliases = _validate_field_options(
+    normalized_aliases, effective_empty = _validate_field_options(
         label,
         aliases,
+        allow_implicit_label=True,
         required=required,
         default=default,
         default_factory=default_factory,
@@ -354,8 +375,7 @@ def field(
         default=default,
         default_factory=default_factory,
         parser=parser,
-        parse_empty=empty == "parse" or bool(getattr(parser, "parse_empty", False)),
-        empty=empty,
+        empty=effective_empty,
     )
 
 
@@ -381,7 +401,7 @@ def id_field(
         diagnostics need a stable ``item_id``.
 
     """
-    normalized_aliases = _validate_field_options(
+    normalized_aliases, effective_empty = _validate_field_options(
         label,
         aliases,
         required=True,
@@ -394,6 +414,7 @@ def id_field(
         aliases=normalized_aliases,
         required=True,
         parser=parser,
+        empty=effective_empty,
         is_id=True,
     )
 
@@ -428,7 +449,7 @@ def discriminator_field(
         ```
 
     """
-    normalized_aliases = _validate_field_options(
+    normalized_aliases, effective_empty = _validate_field_options(
         label,
         aliases,
         required=True,
@@ -441,6 +462,7 @@ def discriminator_field(
         aliases=normalized_aliases,
         required=True,
         parser=parser,
+        empty=effective_empty,
         is_discriminator=True,
     )
 
@@ -490,7 +512,7 @@ def discriminator(
         raise TypeError("discriminator variants must be a mapping")
     if not variants:
         raise ValueError("discriminator variants cannot be empty")
-    normalized_aliases = _validate_field_options(
+    normalized_aliases, effective_empty = _validate_field_options(
         label,
         aliases,
         required=True,
@@ -503,6 +525,7 @@ def discriminator(
         aliases=normalized_aliases,
         required=True,
         parser=parser,
+        empty=effective_empty,
         is_discriminator=True,
         variants=MappingProxyType(dict(variants)),
     )
@@ -553,7 +576,7 @@ def reference(
         raise TypeError("reference separator must be a string")
     if many and not separator:
         raise ValueError("reference separator cannot be empty")
-    normalized_aliases = _validate_field_options(
+    normalized_aliases, effective_empty = _validate_field_options(
         label,
         aliases,
         required=required,
@@ -565,5 +588,6 @@ def reference(
         aliases=normalized_aliases,
         required=required,
         default=default,
+        empty=effective_empty,
         reference=ReferenceSpec(target=target, many=many, separator=separator),
     )

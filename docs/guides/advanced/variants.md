@@ -128,7 +128,7 @@ domain code.
 !!! warning "Register variants before parsing"
     Explicit `@Table.variant(...)` decorators should run while the schema
     module is imported. The first successful schema-family finalization by
-    `parse()`, `parse_records()`, or `validate()` seals the registry. Registering another
+    `parse()`, `parse_as()`, or `validate()` seals the registry. Registering another
     variant after that raises `SchemaDefinitionError`. `describe()` and
     `variant_for()` inspect the current registry without sealing it.
 
@@ -230,7 +230,7 @@ the authored table text should be accepted in more than one spelling.
 ## Give Each Variant Its Own Output Model
 
 Variants can define their own `output_model` or `build_output()` behavior.
-That is useful when `parse()` should return different project object types
+That is useful when `parse_as()` should return different project object types
 from one table.
 
 ```python title="Per-variant output models"

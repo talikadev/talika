@@ -10,10 +10,10 @@ from talika import RowTable, boolean, field, integer
 
 
 class UserFields(RowTable):
-    username = field("username", required=True)
-    email = field("email", required=True)
-    role = field("role", default="viewer")
-    active = field("active", parser=boolean(), default=True)
+    username = field(required=True)
+    email = field(required=True)
+    role = field(default="viewer")
+    active = field(parser=boolean(), default=True)
 # --8<-- [end:contract-basic]
 
 # --8<-- [start:parse-basic]

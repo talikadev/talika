@@ -87,7 +87,7 @@ class PreserveContentTable(ColumnTable):
 # --8<-- [end:preserve-schema]
 
 # --8<-- [start:preserve-call]
-poll = PreserveContentTable.parse_records(poll_with_body)[0]
+poll = PreserveContentTable.parse(poll_with_body)[0]
 # --8<-- [end:preserve-call]
 
 # --8<-- [start:preserve-output]
@@ -115,7 +115,7 @@ TypeError: 'mappingproxy' object does not support item assignment
 # --8<-- [end:readonly-extras-output]
 
 # --8<-- [start:empty-extras-output]
->> clean = PreserveContentTable.parse_records(clean_poll)[0]
+>> clean = PreserveContentTable.parse(clean_poll)[0]
 >> dict(clean.table_extras)
 {}
 # --8<-- [end:empty-extras-output]
@@ -138,7 +138,7 @@ class AliasContentTable(RowTable):
 # --8<-- [end:alias-schema]
 
 # --8<-- [start:alias-output]
->> poll = AliasContentTable.parse_records(
+>> poll = AliasContentTable.parse(
 ...     [["type", "Article body", "Options"], ["Poll", "legacy", "Yes, No"]]
 ... )[0]
 >> dict(poll.table_extras)

@@ -33,8 +33,8 @@ want to use in setup code.
 ## Define a Field Contract
 
 Field declarations live on a `RowTable` or `ColumnTable` schema class. The
-class attribute name is the Python name. The string passed to `field(...)` is
-the table label.
+class attribute name is the Python name. When `field()` has no label, that
+attribute name also becomes the table label.
 
 ```python title="users_table.py"
 --8<-- "docs_src/guides/basic/fields.py:contract-basic"
@@ -51,6 +51,16 @@ The table label and the Python attribute can be the same, but they do not have
 to be. In real projects, feature tables often use labels such as `Full name`,
 `Account status`, or `Can publish?`, while Python code uses `name`, `status`,
 and `can_publish`.
+
+```python title="Implicit and explicit labels"
+class UserTable(RowTable):
+    name = field(required=True)             # label: "name"
+    full_name = field("Full name")          # label: "Full name"
+```
+
+Specialized helpers such as `id_field()`, `reference()`, and
+`discriminator_field()` still require explicit labels because those labels are
+part of a broader table relationship.
 
 !!! note "Fields are declared once"
     The point of a field declaration is to stop every test step from
@@ -87,7 +97,7 @@ attribute name are ambiguous and must be resolved by redeclaring that field on
 the concrete schema.
 
 A normal attribute cannot silently replace an inherited field. Field names
-also cannot replace parser lifecycle methods such as `parse`, `validate`,
+also cannot replace parser lifecycle methods such as `parse`, `parse_as`, `validate`,
 `build_output`, or `validate_record`, or record APIs such as `table_source`
 and `as_dict`.
 These mistakes raise `SchemaDefinitionError` while the schema is being built.

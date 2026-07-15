@@ -29,6 +29,40 @@ class DiagnosticSeverity(str, Enum):
     WARNING = "warning"
 
 
+class TalikaWarning(UserWarning):
+    """Expose one structured Talika diagnostic through Python warnings.
+
+    Raising parse APIs return their normal records or output models when
+    validation reports warning-severity diagnostics. Each diagnostic is also
+    emitted as ``TalikaWarning`` so callers may display, filter, or assert it
+    with the standard :mod:`warnings` tools.
+
+    Attributes:
+        diagnostic: Immutable warning-severity diagnostic produced by Talika.
+
+    Args:
+        diagnostic: Structured diagnostic to expose as a Python warning.
+
+    Raises:
+        ValueError: If the diagnostic does not have warning severity.
+
+    !!! example
+        ```python
+        with pytest.warns(TalikaWarning) as captured:
+            records = UserTable.parse(datatable)
+
+        assert captured[0].message.diagnostic.code == "legacy_value"
+        ```
+
+    """
+
+    def __init__(self, diagnostic: Diagnostic) -> None:
+        if diagnostic.severity is not DiagnosticSeverity.WARNING:
+            raise ValueError("TalikaWarning requires a warning diagnostic")
+        self.diagnostic = diagnostic
+        super().__init__(diagnostic.message)
+
+
 def _qualified_type(value: object) -> str:
     value_type = type(value)
     return f"{value_type.__module__}.{value_type.__qualname__}"

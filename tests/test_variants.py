@@ -78,7 +78,7 @@ def test_discriminator_component_supplies_validation_and_output_model():
 
     assert error.value.schema == "ContentTable[Article]"
 
-    records = ContentTable.parse(
+    records = ContentTable.parse_as(
         [["type", "body"], ["Article", "A sufficiently long body"]],
         context={"minimum": 10},
     )
@@ -324,7 +324,7 @@ def test_each_variant_can_construct_its_own_output_model():
         output_model = Poll
         options: list[str] = field("options", required=True, parser=split(","))
 
-    items = ContentTable.parse(
+    items = ContentTable.parse_as(
         [
             ["type", "headline", "body", "options"],
             ["Article", "News", "Text", ""],

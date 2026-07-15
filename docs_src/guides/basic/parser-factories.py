@@ -217,6 +217,7 @@ class ListParsers(RowTable):
     reviewer = field(
         "reviewer",
         parser=optional(integer(), none_values=("none", "n/a", "null")),
+        empty="parse",
     )
 # --8<-- [end:list-contract]
 
@@ -312,7 +313,11 @@ assert [record.reviewer for record in records] == [None, None, None, None, 7]
 
 # --8<-- [start:optional-replace-error]
 class ReplacedNullTokens(RowTable):
-    reviewer = field("reviewer", parser=optional(integer(), none_values=("n/a",)))
+    reviewer = field(
+        "reviewer",
+        parser=optional(integer(), none_values=("n/a",)),
+        empty="parse",
+    )
 
 
 ReplacedNullTokens.parse(

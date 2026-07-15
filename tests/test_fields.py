@@ -21,6 +21,14 @@ def test_asterisk_in_label_has_no_implicit_meaning():
     assert record.value == ""
 
 
+def test_field_uses_its_attribute_name_when_label_is_omitted():
+    class UserTable(RowTable):
+        name = field(aliases=("Full name",))
+
+    assert UserTable.name.label == "name"
+    assert UserTable.parse([["Full name"], ["Alice"]])[0].name == "Alice"
+
+
 def test_column_table_requires_exactly_one_id_field():
     with pytest.raises(SchemaDefinitionError, match="exactly one id_field"):
 
@@ -116,13 +124,89 @@ def test_row_table_rejects_multiple_id_fields_during_declaration():
         lambda: field("value", aliases=(1,)),
         lambda: field("value", parser="parser"),
         lambda: field("value", default_factory="factory"),
-        lambda: field("value", empty="parse"),
         lambda: id_field("id", parser=object()),
     ],
 )
 def test_invalid_field_declarations_fail_immediately(factory):
     with pytest.raises((TypeError, ValueError)):
         factory()
+
+
+def test_empty_parse_requires_an_inferred_or_explicit_parser():
+    with pytest.raises(SchemaDefinitionError, match="empty='parse'"):
+
+        class InvalidRows(RowTable):
+            value = field(empty="parse")
+
+
+def test_required_fields_reject_blank_before_calling_the_parser():
+    calls = []
+
+    class RequiredRows(RowTable):
+        value = field(
+            required=True,
+            parser=lambda value, context: calls.append(value) or None,
+        )
+
+    with pytest.raises(TableError) as captured:
+        RequiredRows.parse([["value"], [""]])
+
+    assert captured.value.code == "empty_required"
+    assert calls == []
+
+
+def test_column_required_fields_also_reject_blank_before_parser():
+    calls = []
+
+    class RequiredColumns(ColumnTable):
+        id = id_field("IDs")
+        value = field(
+            required=True,
+            parser=lambda value, context: calls.append(value) or None,
+        )
+
+    with pytest.raises(TableError) as captured:
+        RequiredColumns.parse([["IDs", "one"], ["value", ""]])
+
+    assert captured.value.code == "empty_required"
+    assert calls == []
+
+
+def test_column_optional_empty_policies_match_row_policies():
+    class OptionalColumns(ColumnTable):
+        id = id_field("IDs")
+        raw = field(parser=lambda value, context: int(value))
+        none = field(empty="none")
+        parsed = field(
+            parser=lambda value, context: "parsed-blank",
+            empty="parse",
+        )
+
+    record = OptionalColumns.parse(
+        [["IDs", "one"], ["raw", ""], ["none", ""], ["parsed", ""]]
+    )[0]
+
+    assert record.raw == ""
+    assert record.none is None
+    assert record.parsed == "parsed-blank"
+
+
+def test_column_optional_empty_error_is_source_aware():
+    class OptionalColumns(ColumnTable):
+        id = id_field("IDs")
+        value = field(empty="error")
+
+    with pytest.raises(TableError) as captured:
+        OptionalColumns.parse([["IDs", "one"], ["value", ""]])
+
+    assert captured.value.code == "empty_optional"
+    assert (captured.value.row, captured.value.column) == (2, 2)
+
+
+@pytest.mark.parametrize("empty", ["raw", "none", "parse"])
+def test_required_fields_reject_contradictory_empty_policies(empty):
+    with pytest.raises(ValueError, match="required fields"):
+        field(required=True, empty=empty)
 
 
 @pytest.mark.parametrize("default", [[], {}, set()])

@@ -16,7 +16,7 @@ from talika import RowTable, boolean, field
 
 class UserTable(RowTable):
     name = field("name", aliases=("Full name",), required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
     active = field("active", parser=boolean(), default=True)
 # --8<-- [end:contract]
 

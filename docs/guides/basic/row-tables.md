@@ -204,9 +204,8 @@ through parser and default-factory context.
 In this example, `parse_display_name()` sees `context.item_id`, and
 `default_audit_name()` uses the same ID to create a missing audit value.
 
-Use `parse_records()` when you specifically want the Talika record object and
-its `table_source` metadata. If the schema later configures an output model,
-`parse()` may return that model instead.
+`parse()` always returns the Talika record object with its `table_source`
+metadata. Use `parse_as()` when a caller explicitly needs an output model.
 
 ## Row IDs in Diagnostics
 

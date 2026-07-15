@@ -6,7 +6,7 @@ without requiring schema classes to define ``__init__`` methods.
 
 !!! info
     Output-model conversion happens after records are finalized. Use
-    ``parse_records()`` when tests need these intermediate record objects.
+    ``parse()`` when tests need these source-aware record objects.
 """
 
 from __future__ import annotations

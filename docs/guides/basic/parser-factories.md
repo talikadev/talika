@@ -291,9 +291,11 @@ Use `optional(parser)` when an empty cell or a null-like token should become
 --8<-- "docs_src/guides/basic/parser-factories.py:optional-output"
 ```
 
-By default, `optional(...)` treats blank cells, `none`, and `null` as `None`.
-When you pass `none_values=...`, you are replacing the configured null-like
-tokens. Include every token your table should accept.
+`optional(...)` understands blank cells, `none`, and `null`. A blank reaches
+the parser only when the field declares `empty="parse"`; without that policy,
+the field handles the blank first. When you pass `none_values=...`, you are
+replacing the configured null-like tokens. Include every token your table
+should accept.
 
 ```python title="Replacing null-like tokens"
 --8<-- "docs_src/guides/basic/parser-factories.py:optional-replace-error"

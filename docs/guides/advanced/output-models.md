@@ -30,7 +30,8 @@ code wants to use.
 
 ## Start With Schema Records
 
-Without an output model, `parse()` returns schema record objects.
+`parse()` always returns schema record objects, even when the schema configures
+an output model.
 
 ```python title="A normal schema record"
 --8<-- "docs_src/guides/advanced/output-models.py:record-schema"
@@ -66,7 +67,8 @@ keyword arguments. A dataclass is the simplest example.
 --8<-- "docs_src/guides/advanced/output-models.py:dataclass-model"
 ```
 
-After fields are parsed and defaults are applied, Talika calls:
+When `parse_as()` is called without an explicit target, Talika uses the
+configured model and calls:
 
 ```python title="Default output-model call"
 --8<-- "docs_src/guides/advanced/output-models.py:default-model-call"
@@ -75,7 +77,7 @@ After fields are parsed and defaults are applied, Talika calls:
 That means the output model receives Python values, not raw table text. In the
 example below, `age` reaches the dataclass as `34`, not `"34"`.
 
-```python title="parse() and parse_records() side by side"
+```python title="parse() and parse_as() side by side"
 --8<-- "docs_src/guides/advanced/output-models.py:parse-vs-records"
 ```
 
@@ -83,8 +85,8 @@ example below, `age` reaches the dataclass as `34`, not `"34"`.
 --8<-- "docs_src/guides/advanced/output-models.py:parse-vs-records-output"
 ```
 
-`parse()` returns the public objects. `parse_records()` skips output conversion
-and returns schema instances.
+`parse()` returns schema instances. `parse_as()` runs the same lifecycle and
+then returns public objects.
 
 !!! warning "Match output fields to parsed fields"
     The default `output_model` call uses every value from `record.as_dict()`.
@@ -96,7 +98,7 @@ and returns schema instances.
 Output objects are intentionally clean. They usually do not know about table
 rows, columns, original text, aliases, or Talika source cells.
 
-Use `parse_records()` when the caller needs those details.
+Use `parse()` when the caller needs those details.
 
 ```python title="Inspecting source metadata before output conversion"
 --8<-- "docs_src/guides/advanced/output-models.py:source-records"
@@ -107,10 +109,24 @@ to explain where a table value came from. A domain object such as `User` should
 not normally need to know that `age` came from row 2, column 2 of a feature
 file. The schema record is the right object for that job.
 
-!!! tip "Use parse_records for table-aware work"
+!!! tip "Use parse for table-aware work"
     If the code needs `source_for(...)`, `table_source`, `item_id`, or schema
-    methods, ask for records. If the code only needs clean project data, use
-    `parse()`.
+    methods, ask for records with `parse()`. If the code only needs clean
+    project data, use `parse_as()`.
+
+## Supply an Output Model for One Call
+
+The output target does not have to live on the schema. Pass any callable that
+accepts the record fields as keyword arguments:
+
+```python
+users = UserTable.parse_as(users_table, User)
+```
+
+An explicit target takes precedence over configured base or variant output
+hooks. Talika raises `TypeError` immediately when the supplied target is not
+callable. Calling `parse_as(table)` without a configured conversion raises a
+clear `ValueError`.
 
 ## Validation Runs Before Output Conversion
 
@@ -184,7 +200,7 @@ If output construction raises an exception, Talika wraps it in a source-aware
 
 A custom output model or builder may raise a deliberate `TableError`,
 `TableErrors`, or `SchemaDefinitionError`; Talika preserves that exception
-instead of reclassifying it. `validate()`, `parse_records()`, and static
+instead of reclassifying it. `parse()`, `validate()`, and static
 checking never call output conversion.
 
 ```python title="An output model that rejects one record"
@@ -225,6 +241,11 @@ field values as keyword arguments.
 Talika does not need a separate parsing path for this. Pydantic receives the
 already parsed values and performs its own model validation during output
 construction.
+
+Dataclass and Pydantic constructors receive schema **attribute names**, not
+table labels. For example, `full_name = field("Full name")` passes
+`full_name=...`. Use `build_output()` when a project model uses different
+constructor names.
 
 Use this when your test code already speaks in Pydantic models. If Pydantic is
 only being used to parse table strings, prefer Talika field parsers instead so

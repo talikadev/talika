@@ -67,7 +67,6 @@ class CompiledField:
     default: Any
     default_factory: Any
     parser: Callable[..., Any] | None
-    parse_empty: bool
     empty: EmptyPolicy
     is_id: bool
     is_discriminator: bool

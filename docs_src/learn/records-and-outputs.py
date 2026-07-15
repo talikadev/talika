@@ -7,7 +7,7 @@ assert users[0].as_dict() == {"name": "Mira", "age": 34}
 # --8<-- [end:record]
 
 # --8<-- [start:factory]
-records = UserTable.parse_records(datatable)
+records = UserTable.parse(datatable)
 
 created_users = [UserFactory(**record.as_dict()) for record in records]
 # --8<-- [end:factory]
@@ -28,14 +28,14 @@ class UserTable(RowTable):
     output_model = User
 
     name = field("name", required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
 
 
 # --8<-- [end:dataclass-output]
 
 # --8<-- [start:parse-vs-records]
-users = UserTable.parse(datatable)
-records = UserTable.parse_records(datatable)
+records = UserTable.parse(datatable)
+users = UserTable.parse_as(datatable)
 
 assert users[0] == User(name="Mira", age=34)
 assert records[0].source_for("name").source_value == "Mira"

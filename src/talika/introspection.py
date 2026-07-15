@@ -12,7 +12,7 @@ or easily renderable metadata.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, cast
 
 from .fields import MISSING, Field
 from .parsers import _configured_parser_description
@@ -100,7 +100,7 @@ class FieldContract:
         reference = declared.reference
         return cls(
             name=name,
-            label=declared.label,
+            label=cast(str, declared.label),
             aliases=declared.aliases,
             required=declared.required,
             is_id=declared.is_id,

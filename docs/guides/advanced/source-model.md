@@ -101,8 +101,7 @@ Parsed schema records expose source metadata through `table_source` and
 --8<-- "docs_src/guides/advanced/source-model.py:row-schema"
 ```
 
-Use `parse_records(...)` when you specifically need schema records and source
-metadata.
+Use `parse(...)` when you need schema records and source metadata.
 
 ```python title="Reading row record source"
 --8<-- "docs_src/guides/advanced/source-model.py:row-source"
@@ -276,7 +275,7 @@ Reach for the source model when you are writing:
 - output builders that need record provenance
 - tooling that reports row and column locations
 
-Use `parse_records(...)` when you need source metadata after parsing. Use
+Use `parse(...)` when you need source metadata after parsing. Use
 `TableData` and `TableCell` directly when you are transforming or checking the
 table before normal schema parsing.
 

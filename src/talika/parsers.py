@@ -593,20 +593,15 @@ class _OptionalParser:
         parser: Parser used when the value is not null-like.
         none_values: Normalized tokens that should become ``None``.
         case_sensitive: Whether null-token matching preserves case.
-        parse_empty: Marker consumed by field declarations so explicit empty
-            cells are sent to this parser.
-
     !!! info
-        This is a small callable object instead of a closure because
-        ``parse_empty`` is part of the parser's public behavior to field
-        declarations.
+        Field declarations decide whether explicit empty cells reach this
+        parser through ``empty="parse"``.
 
     """
 
     parser: Parser
     none_values: frozenset[str]
     case_sensitive: bool
-    parse_empty: bool = True
 
     def __call__(self, value: Any, context: CellContext) -> Any:
         """Return ``None`` for null-like input or delegate to the wrapped parser.
@@ -645,13 +640,13 @@ def optional(
         case_sensitive: Whether matching ``none_values`` should preserve case.
 
     Returns:
-        A parser object that accepts explicit empty cells and returns optional
-        values.
+        A parser object that converts empty or configured null-like values to
+        ``None`` when the field invokes it.
 
     !!! info
-        The returned object advertises ``parse_empty=True`` so ``field()`` will
-        call it for explicit empty cells instead of short-circuiting to an
-        empty value.
+        Use ``field(..., empty="parse")`` when an explicit blank cell should
+        reach the returned parser. Without that field policy, blanks follow
+        the field's normal empty-cell behavior.
 
     !!! example
         ```python

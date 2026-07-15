@@ -25,7 +25,7 @@ from talika import RowTable, boolean, field, split
 
 class UserTable(RowTable):# (1)!
     name = field("name", required=True) # (2)!
-    age: int = field("age") # (3)!
+    age: int = field("age", required=True) # (3)!
     roles = field("roles", parser=split(",")) # (4)!
     active = field("active", parser=boolean(), default=True) # (5)!
 
@@ -102,7 +102,7 @@ def generated_words(match, context):
 
 
 # --8<-- [start:h]
-records = UserTable.parse_records(datatable)
+records = UserTable.parse(datatable)
 
 users = [
     UserFactory(**record.as_dict())
@@ -125,9 +125,9 @@ class UserTable(RowTable):
     output_model = User
 
     name = field("name", required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
 
 
-users: list[User] = UserTable.parse(datatable)
+users: list[User] = UserTable.parse_as(datatable)
 
 # --8<-- [end:i]

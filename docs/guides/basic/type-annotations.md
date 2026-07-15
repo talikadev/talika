@@ -45,13 +45,15 @@ attaches the matching parser to the field.
 
 Resolution is isolated per field and follows inherited annotations back to
 the nearest class that declared them. If one postponed annotation cannot be
-resolved, only that field stays as raw text; supported annotations on other
+resolved, only that field is left unresolved; supported annotations on other
 fields continue to infer their parsers. An explicit parser takes precedence
 without requiring its annotation to resolve.
 
-The important phrase is "matching parser." Annotation inference is not runtime
-type checking. It is a small convenience layer over the same parser mechanism
-used by `field(parser=...)`.
+Talika also checks the value paths it controls. A required `int` is consistent
+because its inferred parser produces an integer. An optional `int` must say
+what a blank cell means, and a field left as raw text must allow `str`. Explicit
+custom parsers and `default_factory` results remain trusted extension points;
+Talika is not a general runtime type checker.
 
 ```python title="Parse annotated values"
 --8<-- "docs_src/guides/basic/type-annotations.py:parse-basic"
@@ -150,8 +152,9 @@ declared strings and returns the string itself.
 
 ## Optional Annotations
 
-Use an optional annotation when a present blank or null-like token should become
-`None`.
+Use an optional annotation when missing data may become `None`. Add
+`empty="parse"` when a present blank or null-like token should also reach the
+inferred optional parser and become `None`.
 
 ```python title="Optional annotation inference"
 --8<-- "docs_src/guides/basic/type-annotations.py:optional-contract"
@@ -165,18 +168,18 @@ Use an optional annotation when a present blank or null-like token should become
 --8<-- "docs_src/guides/basic/type-annotations.py:optional-output"
 ```
 
-For `int | None`, a non-empty value is parsed as an integer. A blank cell,
-`none`, or `null` becomes `None`. For `str | None`, non-null values remain
-strings while the same blank and null-like tokens become `None`.
+For `int | None`, a non-empty value is parsed as an integer. With
+`empty="parse"`, a blank cell, `none`, or `null` becomes `None`. For
+`str | None`, non-null values remain strings while the same null-like tokens
+become `None`.
 
 This is different from a plain optional field with no annotation. A plain field
 can be absent and return `None`, but an explicit blank cell normally remains
 `""` unless the field parser or empty-cell policy says otherwise.
 
-!!! tip "Optional annotations are about authored blanks too"
-    `age: int | None` does more than document that your Python code accepts
-    `None`. It also gives Talika a parser that knows how to turn a blank cell
-    into `None`.
+!!! tip "Make blank parsing visible"
+    The optional parser understands blank input, but receives it only when the
+    field says `empty="parse"`. This keeps the empty-cell contract explicit.
 
 ## Lists Need Explicit Parsers
 
@@ -191,11 +194,11 @@ might use commas, pipes, semicolons, one value per line, JSON text, or
 project-specific tokens. Talika should not guess that language from the Python
 annotation alone.
 
-```python title="Parsing list annotations without parsers"
+```text title="Schema definition failure"
 --8<-- "docs_src/guides/basic/type-annotations.py:list-raw-parse"
 ```
 
-```bash { .talika-terminal title="List annotations stay as text" .speed-3}
+```text title="Correction"
 --8<-- "docs_src/guides/basic/type-annotations.py:list-raw-output"
 ```
 
@@ -245,10 +248,12 @@ but the authored table uses a vocabulary that needs custom normalization.
     If you write a parser that returns a string from a field annotated as
     `int`, the parser result is what the record receives.
 
-## Unsupported Annotations Stay as Text
+## Unsupported Annotations Need Parsers
 
-When Talika does not know how to infer a safe parser, it leaves the value as the
-cell text.
+When Talika does not know how to infer a safe parser and the annotation does
+not accept text, schema creation fails with a concrete correction. This avoids
+returning a string from a field that promises a custom class or ambiguous
+union.
 
 ```python title="Unsupported annotations"
 --8<-- "docs_src/guides/basic/type-annotations.py:unsupported-contract"
@@ -260,7 +265,7 @@ cell text.
 
 This includes custom classes and ambiguous unions such as `int | float`. Both
 types could plausibly parse the same value, and choosing one would be a hidden
-policy decision. Use `field(parser=...)` when the project needs that conversion.
+policy decision. The example supplies explicit parsers for both fields.
 
 !!! example "A useful rule of thumb"
     If an annotation names a domain concept, Talika probably cannot know how to

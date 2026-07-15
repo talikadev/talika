@@ -141,8 +141,8 @@ That matters for output models. The default output-model conversion uses
 `record.as_dict()`, so preserved inapplicable values do not get passed into a
 dataclass, Pydantic model, or ordinary constructor by accident.
 
-If an output builder wants to inspect extras, use `parse_records()` or a custom
-`build_output()` that deliberately reads `record.table_extras`.
+If output conversion needs extras, use a custom `build_output()` that
+deliberately reads `record.table_extras`.
 
 !!! warning "Do not depend on extras as required data"
     Extras are preserved because the value did not fit the selected variant.

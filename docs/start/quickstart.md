@@ -15,7 +15,7 @@ real Gherkin data table with `pytest-bdd`.
 
 By the end, the table text from a feature file will become Python records with
 an integer age, a list of roles, a strict boolean flag, source-aware errors, and
-a clear choice between `parse()` and `parse_records()`.
+a clear choice between `parse()` and `parse_as()`.
 
 The examples assume Talika is already available in your test environment.
 
@@ -123,33 +123,27 @@ used:
 That makes optional columns useful for feature files. Authors can keep simple
 tables short, while the schema still gives Python a complete value.
 
-## Choose parse or parse_records
+## Parse records or convert them
 
-For many schemas, `parse()` and `parse_records()` appear to return the same
-thing because the default public output is the Talika record itself. The
-difference matters once your schema declares an output model.
+`parse()` has one predictable return shape: schema records. Configuring an
+output model does not change that return type.
 
 ```python title="Public output versus Talika records"
 --8<-- "docs_src/start/quickstart.py:output-model"
 ```
 
-Use `parse()` for the normal step result. It returns the schema's public output:
-
-- by default, Talika record objects
-- with `output_model`, your dataclass, Pydantic model, or custom output object
-- with a custom `build_output()`, whatever your schema chooses to return
-
-Use `parse_records()` when you specifically need Talika's record object. That
-record keeps helper methods and source metadata:
+Use `parse()` when the step wants Talika records. Records keep `as_dict()` and
+source metadata. Use `parse_as()` when the step wants a dataclass, Pydantic
+model, or custom output object. With no argument, it uses the schema's
+configured `output_model` or `build_output()` hook.
 
 ```python title="Inspecting source metadata"
 --8<-- "docs_src/start/quickstart.py:parse-records-source"
 ```
 
 !!! note "A practical rule"
-    In step definitions, start with `parse()`. Reach for `parse_records()` when
-    you are building fixtures, debugging table coordinates, calling `as_dict()`,
-    or raising your own source-aware `TableError`.
+    Start with `parse()`. Add `parse_as()` only at a boundary that needs a
+    project model. This keeps parsing and object construction visible in code.
 
 ## Use the contract in pytest-bdd
 

@@ -102,12 +102,12 @@ datatable = [
     ["Akash", "27"],
 ]
 
-users = UserTable.parse(datatable)
-records = UserTable.parse_records(datatable)
+records = UserTable.parse(datatable)
+users = UserTable.parse_as(datatable)
 
-assert users == [User(name="Akash", age=27)]
 assert isinstance(records[0], UserTable)
 assert records[0].as_dict() == {"name": "Akash", "age": 27}
+assert users == [User(name="Akash", age=27)]
 # --8<-- [end:output-model]
 
 # --8<-- [start:parse-records-source]

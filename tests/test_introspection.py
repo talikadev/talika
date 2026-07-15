@@ -43,7 +43,7 @@ def test_describe_exposes_the_effective_boolean_contract():
                 case_sensitive=True,
             ),
         )
-        inferred: bool = field("inferred")
+        inferred: bool = field("inferred", required=True)
 
     contract = FeatureFlags.describe()
 
@@ -56,3 +56,16 @@ def test_describe_exposes_the_effective_boolean_contract():
     )
     assert contract.fields[2].parser == contract.fields[0].parser
     assert contract.as_dict()["fields"][0]["parser"] == contract.fields[0].parser
+
+
+def test_describe_exposes_resolved_labels_and_effective_empty_policies():
+    class Users(RowTable):
+        name = field(required=True)
+        note = field()
+
+    contract = Users.describe()
+
+    assert [(item.label, item.empty) for item in contract.fields] == [
+        ("name", "error"),
+        ("note", "raw"),
+    ]

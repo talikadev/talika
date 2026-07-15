@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from .context import ParseContext
-from .engine_types import INVALID, ErrorCollector, SchemaRuntime
+from .engine_types import (
+    INVALID,
+    DiagnosticCollector,
+    LifecycleOutcome,
+    SchemaRuntime,
+)
 from .errors import TableError, TableErrorCode
 from .schema_compiler import seal_schema_family
-from .schema_plan import ErrorMode
 from .table import RawTable, TableCell, TableData
 
 
@@ -20,11 +24,12 @@ def parse_row_table(
     context: Mapping[str, Any] | ParseContext | None,
     error_mode: str,
     convert_output: bool,
-) -> list[Any]:
+    output_model: Callable[..., Any] | None = None,
+) -> LifecycleOutcome[Any]:
     """Parse row-oriented records through shared compiled schema helpers."""
     mode = schema._validate_error_mode(error_mode)
     seal_schema_family(schema)
-    errors: ErrorCollector = [] if mode is ErrorMode.COLLECT else None
+    errors = DiagnosticCollector(mode)
     parse_context = schema._parse_context(context)
     table = schema._prepare_table(datatable, parse_context)
     header_cells = table.rows[0]
@@ -143,9 +148,11 @@ def parse_row_table(
                 extras=extras,
             )
         )
-    return schema._finalize_records(
+    values = schema._finalize_records(
         records,
         parse_context,
         errors,
         convert_output=convert_output,
+        output_model=output_model,
     )
+    return LifecycleOutcome(values=values, diagnostics=errors.diagnostics)

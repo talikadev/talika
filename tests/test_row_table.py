@@ -85,7 +85,7 @@ def test_row_id_field_reaches_default_factories_and_sources():
         value = field("value", default_factory=default)
         item = id_field("id")
 
-    record = DefaultedRowTable.parse_records([["id"], ["row-7"]])[0]
+    record = DefaultedRowTable.parse([["id"], ["row-7"]])[0]
 
     assert record.value == "generated-row-7"
     assert record.table_source.item_id == "row-7"

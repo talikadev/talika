@@ -1,5 +1,7 @@
 """Static-typing smoke sample for the documented public API."""
 
+from dataclasses import dataclass
+
 from talika import (
     Diagnostic,
     DiagnosticSeverity,
@@ -12,26 +14,33 @@ from talika import (
     __version__,
     field,
     parse_table,
-    parse_table_records,
+    parse_table_as,
     validate_table,
 )
 
 
+@dataclass
+class User:
+    name: str
+    age: int
+
+
 class UserTable(RowTable):
     name: str = field("name", required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
 
 
 contract: TableContract = UserTable.describe()
-users: list[object] = UserTable.parse([["name", "age"], ["Alice", "30"]])
-records: list[UserTable] = UserTable.parse_records([["name", "age"], ["Alice", "30"]])
-functional_users: list[object] = parse_table(
+records: list[UserTable] = UserTable.parse([["name", "age"], ["Alice", "30"]])
+users: list[User] = UserTable.parse_as([["name", "age"], ["Alice", "30"]], User)
+functional_records: list[UserTable] = parse_table(
     UserTable,
     [["name", "age"], ["Alice", "30"]],
 )
-functional_records: list[UserTable] = parse_table_records(
+functional_users: list[User] = parse_table_as(
     UserTable,
     [["name", "age"], ["Alice", "30"]],
+    User,
 )
 validation: ValidationResult[UserTable] = UserTable.validate(
     [["name", "age"], ["Alice", "30"]]
