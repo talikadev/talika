@@ -47,6 +47,7 @@ jobs:
           "pytest==8.0.0"
           "pytest-bdd==8.0.0"
           "pytest-cov==6.0.0"
+      - run: uv pip check
       - run: uv run --no-sync pytest -p no:cacheprovider
 
   current-dependencies:
@@ -58,9 +59,12 @@ jobs:
         with:
           python-version: "3.13"
       - run: uv sync --locked --all-extras --dev
+      # pytest-bdd selects its compatible gherkin-official release. Upgrading
+      # gherkin independently can force pytest-bdd below Talika's >=8 contract.
       - run: >-
           uv pip install --upgrade
-          gherkin-official pydantic pytest pytest-bdd pytest-cov
+          pydantic pytest "pytest-bdd>=8.0" pytest-cov
+      - run: uv pip check
       - run: uv run --no-sync pytest -p no:cacheprovider
 
   quality:
