@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from .context import CellContext, ParseContext
 from .diagnostics import stable_text_value
-from .engine_types import ErrorCollector, SchemaRuntime
+from .engine_types import DiagnosticCollector, SchemaRuntime
 from .errors import SchemaDefinitionError, TableError, TableErrorCode, TableErrors
 from .fields import Field
 
@@ -15,7 +15,7 @@ def resolve_references(
     schema: type[SchemaRuntime],
     records: list[Any],
     parse_context: ParseContext,
-    errors: ErrorCollector,
+    errors: DiagnosticCollector,
 ) -> None:
     """Resolve references deterministically using compiled family metadata."""
     records_with_references = [

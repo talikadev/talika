@@ -17,7 +17,7 @@ matter which entry point reports it.
 Use the raising APIs when invalid table data should fail immediately:
 
 ```python
-records = UserTable.parse_records(datatable)
+records = UserTable.parse(datatable)
 ```
 
 Use `validate()` when a tool, test, or editor needs a result value:
@@ -64,13 +64,19 @@ assert result.errors[0].code == "parser_failed"
 
 Invalid results never expose partially parsed records. This prevents callers
 from accidentally using records produced before a later field, reference, or
-validator failed. Successful records remain mutable, matching
-`parse_records()`.
+validator failed. Successful records remain mutable, matching `parse()`.
 
-!!! note "Warnings are ready but not produced yet"
-    Diagnostic Model v1 includes warning severity so tools can support it
-    without a future shape change. Talika 0.3 does not create built-in
-    warnings, and warnings alone do not make a result invalid.
+## Validation warnings
+
+Validation hooks may raise a `TableError` with
+`severity=DiagnosticSeverity.WARNING`. Warning-only validation remains valid
+and keeps its complete records.
+
+`validate()` returns warnings in `result.diagnostics` and `result.warnings`.
+The raising APIs emit a public `TalikaWarning` through Python's warnings system
+and still return their data. If warnings and errors coexist, warnings remain in
+discovery order, no partial records are returned, and raising APIs emit the
+warnings before raising the error failures.
 
 Schema declaration errors and API misuse still raise. For example, an invalid
 schema family raises `SchemaDefinitionError`, and an unsupported `error_mode`
@@ -177,7 +183,7 @@ independent failures within a safe phase, then stops before dependent work:
 3. shape, labels, variants, fields, and IDs
 4. reference indexing and resolution
 5. record and whole-table validation
-6. output conversion for `parse()` only
+6. output conversion for `parse_as()` only
 
 Structure or conversion errors stop references and validation. Reference
 errors stop validators and output. Validation errors stop output. These
@@ -224,8 +230,8 @@ diagnostic or format version.
 
 ## Choose An API
 
-- Use `parse()` for normal execution and output conversion.
-- Use `parse_records()` for raising validation that returns schema records.
+- Use `parse()` for raising validation that returns schema records.
+- Use `parse_as()` for explicit or configured output conversion.
 - Use `validate()` for non-raising tooling and complete-table acceptance.
 - Use static checking for feature-file discovery plus `validate()`.
 - Use CLI JSON when another process needs versioned deterministic data.

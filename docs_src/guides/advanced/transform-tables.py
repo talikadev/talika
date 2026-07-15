@@ -38,7 +38,7 @@ class NormalizedContentTable(ColumnTable):
         return TableData.from_cells(rows)
 
 
-record = NormalizedContentTable.parse_records(raw_content)[0]
+record = NormalizedContentTable.parse(raw_content)[0]
 # --8<-- [end:direct-hook]
 
 # --8<-- [start:direct-output]
@@ -88,7 +88,7 @@ pipeline_raw = [
     ["Headline", "release notes"],
 ]
 
-pipeline_record = PipelineContentTable.parse_records(
+pipeline_record = PipelineContentTable.parse(
     pipeline_raw,
     context={"id_prefix": "DOC-"},
 )[0]

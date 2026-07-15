@@ -40,7 +40,7 @@ compact_content = [
     ["Headline", "Shared", "Vote now"],
 ]
 
-items = ContentTable.parse_records(compact_content)
+items = ContentTable.parse(compact_content)
 # --8<-- [end:schema]
 
 # --8<-- [start:records-output]
@@ -95,7 +95,7 @@ letter_rows = [
     ["Type", "Article x3"],
 ]
 
-letter_items = LetterContentTable.parse_records(letter_rows)
+letter_items = LetterContentTable.parse(letter_rows)
 # --8<-- [end:alphabetic-suffix]
 
 # --8<-- [start:alphabetic-suffix-output]

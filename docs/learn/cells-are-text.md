@@ -51,7 +51,7 @@ A table contract makes conversion explicit:
 This says:
 
 - `age` should become an integer
-- `active` should use strict boolean vocabulary
+- `active` should use the explicitly declared `yes/no` Boolean vocabulary
 - `roles` should split one cell into several items
 - `state` should be one of the allowed words
 

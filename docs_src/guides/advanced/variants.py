@@ -228,7 +228,7 @@ class OutputPoll(OutputContentTable):
 # --8<-- [end:variant-output-models]
 
 # --8<-- [start:variant-output-models-output]
->> OutputContentTable.parse(
+>> OutputContentTable.parse_as(
 ...     [
 ...         ["type", "headline", "body", "options"],
 ...         ["Article", "News", "Text", ""],

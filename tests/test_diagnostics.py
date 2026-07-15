@@ -19,6 +19,7 @@ from talika import (
     TableError,
     TableErrorCode,
     TableErrors,
+    TalikaWarning,
     ValidationResult,
     field,
     id_field,
@@ -71,6 +72,162 @@ def test_validation_result_filters_warnings_without_invalidating_records():
     assert result.errors == ()
     assert result.warnings == (warning,)
     assert result.records == ("record",)
+
+
+def test_warning_only_validation_retains_records_and_is_valid():
+    class Users(RowTable):
+        name = field("name")
+
+        def validate_record(self, context):
+            raise TableError(
+                "Name should be reviewed",
+                code="review_name",
+                severity=DiagnosticSeverity.WARNING,
+            )
+
+    result = Users.validate([["name"], ["Alice"]])
+
+    assert result.valid
+    assert result.records[0].name == "Alice"
+    assert [item.code for item in result.warnings] == ["review_name"]
+
+
+def test_table_validation_warning_retains_all_records():
+    class Users(RowTable):
+        name = field("name")
+
+        @classmethod
+        def validate_records(cls, records, context):
+            raise TableError(
+                "Roster should be reviewed",
+                code="review_roster",
+                severity=DiagnosticSeverity.WARNING,
+            )
+
+    result = Users.validate([["name"], ["Alice"], ["Bob"]])
+
+    assert result.valid
+    assert [record.name for record in result.records] == ["Alice", "Bob"]
+    assert [item.code for item in result.warnings] == ["review_roster"]
+
+
+def test_validation_warning_aggregates_also_retain_records():
+    warning = TableError(
+        "Review roster",
+        code="review_roster",
+        severity=DiagnosticSeverity.WARNING,
+    )
+
+    class Users(RowTable):
+        name = field("name")
+
+        @classmethod
+        def validate_records(cls, records, context):
+            raise TableErrors([warning])
+
+    result = Users.validate([["name"], ["Alice"]])
+
+    assert result.valid
+    assert result.records[0].name == "Alice"
+    assert result.warnings == (warning.diagnostic,)
+
+
+def test_value_producing_failures_cannot_be_downgraded_to_warnings():
+    def parser(value, context):
+        raise TableError(
+            "Parser produced no value",
+            code="project_parser",
+            severity=DiagnosticSeverity.WARNING,
+        )
+
+    class Values(RowTable):
+        value = field("value", parser=parser)
+
+    with pytest.raises(TableError) as captured:
+        Values.parse([["value"], ["bad"]])
+
+    result = Values.validate([["value"], ["bad"]])
+
+    assert captured.value.severity is DiagnosticSeverity.ERROR
+    assert not result.valid
+    assert result.records == ()
+    assert result.errors[0].code == "project_parser"
+
+
+def test_value_producing_warning_aggregates_are_also_errors():
+    warning = TableError(
+        "Parser produced no values",
+        code="project_parser_group",
+        severity=DiagnosticSeverity.WARNING,
+    )
+
+    def parser(value, context):
+        raise TableErrors([warning])
+
+    class Values(RowTable):
+        value = field("value", parser=parser)
+
+    with pytest.raises(TableErrors) as captured:
+        Values.parse([["value"], ["bad"]])
+
+    result = Values.validate([["value"], ["bad"]])
+
+    assert captured.value.errors[0].severity is DiagnosticSeverity.ERROR
+    assert not result.valid
+    assert result.errors[0].code == "project_parser_group"
+
+
+def test_parse_and_parse_as_emit_structured_warnings_and_return_data():
+    class Users(RowTable):
+        name = field("name")
+
+        def validate_record(self, context):
+            raise TableError(
+                "Name should be reviewed",
+                code="review_name",
+                severity="warning",
+            )
+
+    with pytest.warns(TalikaWarning) as parsed_warnings:
+        records = Users.parse([["name"], ["Alice"]])
+
+    with pytest.warns(TalikaWarning) as converted_warnings:
+        names = Users.parse_as(
+            [["name"], ["Alice"]],
+            lambda **values: values["name"],
+        )
+
+    assert records[0].name == "Alice"
+    assert names == ["Alice"]
+    assert parsed_warnings[0].message.diagnostic.code == "review_name"
+    assert converted_warnings[0].message.diagnostic.code == "review_name"
+
+
+def test_mixed_warnings_and_errors_keep_order_and_withhold_partial_records():
+    class Users(RowTable):
+        name = field("name")
+
+        def validate_record(self, context):
+            if self.name == "review":
+                raise TableError(
+                    "Review this name",
+                    code="review_name",
+                    severity=DiagnosticSeverity.WARNING,
+                )
+            raise ValueError("Name is invalid")
+
+    result = Users.validate([["name"], ["review"], ["invalid"]])
+
+    assert not result.valid
+    assert result.records == ()
+    assert [item.code for item in result.diagnostics] == [
+        "review_name",
+        "record_validation_failed",
+    ]
+
+    with pytest.warns(TalikaWarning, match="Review this name"):
+        with pytest.raises(TableError, match="Name is invalid"):
+            Users.parse([["name"], ["review"], ["invalid"]])
 
 
 def test_diagnostic_serialization_avoids_object_reprs_and_cycles():
@@ -205,7 +362,7 @@ def test_validate_runs_validation_but_skips_output_conversion():
     assert result.valid
     assert calls == ["validate"]
     with pytest.raises(TableError, match="output should not run"):
-        Users.parse([["name"], ["Alice"]])
+        Users.parse_as([["name"], ["Alice"]])
 
 
 def test_custom_table_errors_pass_through_parsers_and_validation():
@@ -264,7 +421,7 @@ def test_custom_table_errors_pass_through_every_extension_boundary():
             raise output_error
 
     with pytest.raises(TableError) as output_captured:
-        OutputRows.parse([["value"], ["bad"]])
+        OutputRows.parse_as([["value"], ["bad"]])
     assert output_captured.value is output_error
 
     reference_error = TableError("Reference diagnostic", code="reference_project_error")

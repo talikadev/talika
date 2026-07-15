@@ -57,8 +57,8 @@ User(**record.as_dict())
 # --8<-- [end:default-model-call]
 
 # --8<-- [start:parse-vs-records]
-public_users = UserTable.parse(users_table)
-source_records = UserTable.parse_records(users_table)
+source_records = UserTable.parse(users_table)
+public_users = UserTable.parse_as(users_table)
 # --8<-- [end:parse-vs-records]
 
 # --8<-- [start:parse-vs-records-output]
@@ -76,7 +76,7 @@ source_records = UserTable.parse_records(users_table)
 # --8<-- [end:parse-vs-records-output]
 
 # --8<-- [start:source-records]
-record = UserTable.parse_records(users_table)[0]
+record = UserTable.parse(users_table)[0]
 
 age_source = record.source_for("age")
 
@@ -105,7 +105,7 @@ class AdultUserTable(RowTable):
 # --8<-- [end:validation-before-output]
 
 # --8<-- [start:validation-before-output-call]
-AdultUserTable.parse(
+AdultUserTable.parse_as(
     [
         ["username", "age"],
         ["kai", "16"],
@@ -132,7 +132,7 @@ class DisplayUserTable(RowTable):
 # --8<-- [end:custom-builder]
 
 # --8<-- [start:custom-builder-call]
-DisplayUserTable.parse(
+DisplayUserTable.parse_as(
     [
         ["username", "age"],
         ["alice", "34"],
@@ -164,7 +164,7 @@ class StrictUserTable(RowTable):
 # --8<-- [end:output-error]
 
 # --8<-- [start:output-error-call]
-StrictUserTable.parse(
+StrictUserTable.parse_as(
     [
         ["username", "age"],
         ["blocked", "22"],
@@ -193,6 +193,6 @@ class PydanticUserTable(RowTable):
 # --8<-- [end:pydantic-model]
 
 # --8<-- [start:pydantic-output]
->> PydanticUserTable.parse([["username", "age"], ["alice", "34"]])
+>> PydanticUserTable.parse_as([["username", "age"], ["alice", "34"]])
 [UserModel(username='alice', age=34)]
 # --8<-- [end:pydantic-output]

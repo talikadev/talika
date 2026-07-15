@@ -13,7 +13,7 @@ from talika import (
 def test_collect_mode_reports_multiple_cells_in_discovery_order():
     class UserTable(RowTable):
         name = field("name", required=True)
-        age: int = field("age")
+        age: int = field("age", required=True)
 
     with pytest.raises(TableErrors) as captured:
         UserTable.parse(
@@ -44,7 +44,7 @@ def test_collect_mode_reports_multiple_cells_in_discovery_order():
 def test_first_mode_remains_the_default():
     class UserTable(RowTable):
         name = field("name", required=True)
-        age: int = field("age")
+        age: int = field("age", required=True)
 
     with pytest.raises(TableError) as captured:
         UserTable.parse([["name", "age"], ["", "old"]])
@@ -56,7 +56,7 @@ def test_first_mode_remains_the_default():
 def test_collect_mode_combines_valid_record_validation_failures():
     class ScoreTable(ColumnTable):
         id = id_field("IDs")
-        score: int = field("Score")
+        score: int = field("Score", required=True)
 
         def validate_record(self, context):
             if self.score < 0:

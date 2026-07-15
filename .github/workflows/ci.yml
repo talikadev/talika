@@ -8,84 +8,97 @@ on:
       - master
 
 jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v6
+      - run: uv lock --check
+
   test:
+    needs: lockfile
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            python: "3.10"
-            pytest: "pytest>=8,<9"
-          - os: ubuntu-latest
-            python: "3.11"
-            pytest: "pytest>=9,<10"
-          - os: ubuntu-latest
-            python: "3.12"
-            pytest: "pytest>=9,<10"
-          - os: windows-latest
-            python: "3.13"
-            pytest: "pytest>=9,<10"
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
-      - run: uv sync --all-extras --dev
-      - run: uv pip install "${{ matrix.pytest }}"
-      - run: uv run pytest -p no:cacheprovider
+      - run: uv sync --locked --all-extras --dev
+      - run: uv run --no-sync pytest -p no:cacheprovider
 
   minimum-dependencies:
+    needs: lockfile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.10"
-      - run: uv sync --all-extras --dev
+      - run: uv sync --locked --all-extras --dev
       - run: >-
           uv pip install
           "gherkin-official==29.0.0"
           "pydantic==2.0.0"
           "pytest==8.0.0"
           "pytest-bdd==8.0.0"
-      - run: uv run pytest -p no:cacheprovider
+          "pytest-cov==6.0.0"
+      - run: uv pip check
+      - run: uv run --no-sync pytest -p no:cacheprovider
 
   current-dependencies:
+    needs: lockfile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
-      - run: uv sync --all-extras --dev
+      - run: uv sync --locked --all-extras --dev
+      # pytest-bdd selects its compatible gherkin-official release. Upgrading
+      # gherkin independently can force pytest-bdd below Talika's >=8 contract.
       - run: >-
           uv pip install --upgrade
-          gherkin-official pydantic pytest pytest-bdd pytest-cov
-      - run: uv run pytest -p no:cacheprovider
+          pydantic pytest "pytest-bdd>=8.0" pytest-cov
+      - run: uv pip check
+      - run: uv run --no-sync pytest -p no:cacheprovider
 
   quality:
+    needs: lockfile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --all-extras --dev
-      - run: uv run coverage run --branch -m pytest -p no:cacheprovider
-      - run: uv run coverage report --fail-under=90
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run mypy src tests/typing/public_api.py
-      - run: uv run --group docs zensical build --strict
-      - run: uv build
-      - name: Smoke-test built wheel
+      - run: uv sync --locked --all-extras --all-groups
+      - run: uv run --no-sync coverage run --branch -m pytest -p no:cacheprovider
+      - run: uv run --no-sync coverage report --fail-under=90
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync mypy src tests/typing/public_api.py
+      - run: uv run --no-sync zensical build --strict
+      - name: Build wheel and source distribution once
+        run: uv build
+      - name: Smoke-test the exact core wheel and source distribution
+        shell: bash
         run: |
-          python -m venv wheel-smoke
-          wheel-smoke/bin/python -m pip install dist/*.whl
-          wheel-smoke/bin/python -c "from talika import Diagnostic, DiagnosticSeverity, RowTable, ValidationResult, field, validate_table; T = type('SmokeTable', (RowTable,), {'value': field('value', required=True)}); assert T.parse([['value'], ['ok']])[0].value == 'ok'; valid = validate_table(T, [['value'], ['ok']]); invalid = T.validate([['value'], ['']]); assert isinstance(valid, ValidationResult) and valid.valid; assert not invalid.valid and invalid.records == (); assert Diagnostic(code='smoke', message='ok', severity=DiagnosticSeverity.WARNING).diagnostic_version == 1"
-          wheel-smoke/bin/talika --help
-          wheel-smoke/bin/talika describe talika.schema:RowTable
-          wheel-smoke/bin/python -m pip install "gherkin-official>=29.0"
-          wheel-smoke/bin/python -c "from pathlib import Path; Path('wheel-smoke.feature').write_text('Feature: Smoke\\n  Scenario: Valid\\n    Given values:\\n      | value |\\n      | ok    |\\n', encoding='utf-8'); Path('wheel_smoke_schema.py').write_text('from talika import RowTable, field\\nclass SmokeTable(RowTable):\\n    value = field(\\\"value\\\", required=True)\\n', encoding='utf-8')"
-          wheel-smoke/bin/talika check wheel-smoke.feature --schema wheel_smoke_schema.py:SmokeTable --format json | wheel-smoke/bin/python -c "import json, sys; payload = json.load(sys.stdin); assert payload['format_version'] == 1 and payload['status'] == 'valid', payload"
+          version="$(uv run --no-sync python -c 'from importlib.metadata import version; print(version("talika"))')"
+          wheel="dist/talika-${version}-py3-none-any.whl"
+          sdist="dist/talika-${version}.tar.gz"
+          test -f "$wheel"
+          test -f "$sdist"
+
+          python -m venv .smoke-core
+          .smoke-core/bin/python -m pip install "$wheel"
+          .smoke-core/bin/python -m pip check
+          .smoke-core/bin/python -c "from importlib.metadata import version; from talika import RowTable, field; T = type('SmokeTable', (RowTable,), {'value': field(required=True)}); assert version('talika') == '$version'; assert T.parse([['value'], ['ok']])[0].value == 'ok'"
+
+          python -m venv .smoke-sdist
+          .smoke-sdist/bin/python -m pip install "$sdist"
+          .smoke-sdist/bin/python -m pip check
+          .smoke-sdist/bin/python -c "from importlib.metadata import version; assert version('talika') == '$version'"

@@ -7,7 +7,7 @@ Given the users exist
 # --8<-- [start:new-table]
 Given the users exist
   | name     | age | active |
-  | Mira Rao | 34  | yes    |
+  | Mira Rao | 34  | true   |
 # --8<-- [end:new-table]
 
 # --8<-- [start:contract]
@@ -16,7 +16,7 @@ from talika import RowTable, boolean, field
 
 class UserTable(RowTable):
     name = field("name", aliases=("Full name",), required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
     active = field("active", parser=boolean(), default=True)
 # --8<-- [end:contract]
 

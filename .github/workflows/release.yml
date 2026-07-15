@@ -24,29 +24,85 @@ jobs:
       - uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --locked --all-extras --all-groups
+
+      - name: Verify lockfile
+        run: uv lock --check
 
       - name: Verify tag matches package version
         shell: bash
         run: |
-          package_version="$(uv run python -c 'from importlib.metadata import version; print(version("talika"))')"
+          package_version="$(uv run --no-sync python -c 'from importlib.metadata import version; print(version("talika"))')"
           test "$GITHUB_REF_NAME" = "v$package_version"
 
       - name: Run tests and quality checks
         run: |
-          uv run pytest -p no:cacheprovider
-          uv run ruff check .
-          uv run ruff format --check .
-          uv run mypy src tests/typing/public_api.py
+          uv run --no-sync coverage run --branch -m pytest -p no:cacheprovider
+          uv run --no-sync coverage report --fail-under=90
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --no-sync mypy src tests/typing/public_api.py
+          uv run --no-sync zensical build --strict
 
       - name: Build wheel and source distribution
         run: uv build
+
+      - name: Verify exact artifacts in isolated environments
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          wheel="dist/talika-${version}-py3-none-any.whl"
+          sdist="dist/talika-${version}.tar.gz"
+          shopt -s nullglob
+          artifacts=(dist/*)
+          test ${#artifacts[@]} -eq 2
+          test -f "$wheel"
+          test -f "$sdist"
+
+          python -m venv .release-smoke/core
+          .release-smoke/core/bin/python -m pip install "$wheel"
+          .release-smoke/core/bin/python -m pip check
+          .release-smoke/core/bin/python -c "from importlib.metadata import version as installed; from talika import RowTable, field; T = type('SmokeTable', (RowTable,), {'value': field(required=True)}); assert installed('talika') == '$version'; assert T.parse([['value'], ['ok']])[0].value == 'ok'"
+
+          python -m venv .release-smoke/sdist
+          .release-smoke/sdist/bin/python -m pip install "$sdist"
+          .release-smoke/sdist/bin/python -m pip check
+          .release-smoke/sdist/bin/python -c "from importlib.metadata import version as installed; assert installed('talika') == '$version'"
+
+          python -m venv .release-smoke/cli
+          .release-smoke/cli/bin/python -m pip install "${wheel}[cli]"
+          .release-smoke/cli/bin/python -m pip check
+          .release-smoke/cli/bin/talika --help
+          .release-smoke/cli/bin/talika describe talika.schema:RowTable
+
+          python -m venv .release-smoke/pydantic
+          .release-smoke/pydantic/bin/python -m pip install "${wheel}[pydantic]"
+          .release-smoke/pydantic/bin/python -m pip check
+          .release-smoke/pydantic/bin/python -c "from pydantic import BaseModel; from talika import RowTable, field; M = type('M', (BaseModel,), {'__annotations__': {'value': str}}); T = type('T', (RowTable,), {'value': field(required=True)}); assert T.parse_as([['value'], ['ok']], M)[0].value == 'ok'"
+
+          python -m venv .release-smoke/pytest
+          .release-smoke/pytest/bin/python -m pip install "${wheel}[test]"
+          .release-smoke/pytest/bin/python -m pip check
+          mkdir -p .release-smoke/plugin-test
+          cat > .release-smoke/plugin-test/test_plugin.py <<'PY'
+          from talika import RowTable, field
+
+          class Values(RowTable):
+              value = field(required=True)
+
+          def test_talika_fixture_is_discovered_and_parses(talika):
+              records = talika.parse([["value"], ["ok"]], schema=Values)
+              assert records[0].value == "ok"
+          PY
+          .release-smoke/pytest/bin/python -m pytest -p no:cacheprovider -q .release-smoke/plugin-test
 
       - name: Store distributions
         uses: actions/upload-artifact@v5
         with:
           name: python-package-distributions
-          path: dist/
+          path: |
+            dist/talika-*.whl
+            dist/talika-*.tar.gz
           if-no-files-found: error
 
   publish-testpypi:

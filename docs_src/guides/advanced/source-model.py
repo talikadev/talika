@@ -66,7 +66,7 @@ class UserTable(RowTable):
 # --8<-- [end:row-schema]
 
 # --8<-- [start:row-source]
-user = UserTable.parse_records(raw_rows)[0]
+user = UserTable.parse(raw_rows)[0]
 role_source = user.source_for("role")
 # --8<-- [end:row-source]
 
@@ -89,7 +89,7 @@ class ContentTable(ColumnTable):
 # --8<-- [end:column-schema]
 
 # --8<-- [start:column-source]
-content = ContentTable.parse_records(
+content = ContentTable.parse(
     [
         ["IDs", "A-1"],
         ["Headline", "Market brief"],
@@ -140,7 +140,7 @@ class UpperRoleTable(RowTable):
 # --8<-- [end:transform-schema]
 
 # --8<-- [start:transform-output]
->> record = UpperRoleTable.parse_records(raw_rows)[0]
+>> record = UpperRoleTable.parse(raw_rows)[0]
 >> record.role
 'ADMIN'
 

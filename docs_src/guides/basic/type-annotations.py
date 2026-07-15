@@ -1,7 +1,7 @@
 # --8<-- [start:feature-basic]
 Given the users exist
   | age | rating | balance | active | status    | tier  | reviewer |
-  | 34  | 1.5    | 12.30   | yes    | published | staff |          |
+  | 34  | 1.5    | 12.30   | true   | published | staff |          |
 # --8<-- [end:feature-basic]
 
 # --8<-- [start:contract-basic]
@@ -18,20 +18,20 @@ class Status(Enum):
 
 
 class UserAnnotations(RowTable):
-    age: int = field("age")
-    rating: float = field("rating")
-    balance: Decimal = field("balance")
-    active: bool = field("active")
-    status: Status = field("status")
-    tier: Literal["basic", "staff"] = field("tier")
-    reviewer: int | None = field("reviewer")
+    age: int = field("age", required=True)
+    rating: float = field("rating", required=True)
+    balance: Decimal = field("balance", required=True)
+    active: bool = field("active", required=True)
+    status: Status = field("status", required=True)
+    tier: Literal["basic", "staff"] = field("tier", required=True)
+    reviewer: int | None = field("reviewer", empty="parse")
 # --8<-- [end:contract-basic]
 
 # --8<-- [start:parse-basic]
 users = UserAnnotations.parse(
     [
         ["age", "rating", "balance", "active", "status", "tier", "reviewer"],
-        ["34", "1.5", "12.30", "yes", "published", "staff", ""],
+        ["34", "1.5", "12.30", "true", "published", "staff", ""],
     ]
 )
 
@@ -56,17 +56,17 @@ UserAnnotations(age=34, rating=1.5, balance=Decimal('12.30'), active=True, statu
 
 # --8<-- [start:scalar-contract]
 class ProductAnnotations(RowTable):
-    quantity: int = field("quantity")
-    weight: float = field("weight")
-    price: Decimal = field("price")
-    available: bool = field("available")
+    quantity: int = field("quantity", required=True)
+    weight: float = field("weight", required=True)
+    price: Decimal = field("price", required=True)
+    available: bool = field("available", required=True)
 # --8<-- [end:scalar-contract]
 
 # --8<-- [start:scalar-parse]
 product = ProductAnnotations.parse(
     [
         ["quantity", "weight", "price", "available"],
-        ["3", "1.25", "19.99", "on"],
+        ["3", "1.25", "19.99", "true"],
     ]
 )[0]
 
@@ -79,14 +79,14 @@ assert product.available is True
 # --8<-- [start:bool-error]
 ProductAnnotations.parse(
     [
-        ["available"],
-        ["maybe"],
+        ["quantity", "weight", "price", "available"],
+        ["3", "1.25", "19.99", "maybe"],
     ]
 )
 # --8<-- [end:bool-error]
 
 # --8<-- [start:bool-error-output]
-Field parser failed: Expected one of ['0', '1', 'false', 'no', 'off', 'on', 'true', 'yes'] 
+Field parser failed: Expected one of ['false', 'true']
 (code=parser_failed, schema=ProductAnnotations, field='available', 
 row=2, column=1, value='maybe'). 
 Hint: Check the cell value or adjust the field parser for this syntax.
@@ -99,8 +99,8 @@ class ArticleStatus(Enum):
 
 
 class ArticleAnnotations(RowTable):
-    status: ArticleStatus = field("status")
-    tier: Literal["basic", "staff"] = field("tier")
+    status: ArticleStatus = field("status", required=True)
+    tier: Literal["basic", "staff"] = field("tier", required=True)
 # --8<-- [end:enum-contract]
 
 # --8<-- [start:enum-parse]
@@ -119,8 +119,8 @@ assert articles[1].status is ArticleStatus.DRAFT
 # --8<-- [start:literal-error]
 ArticleAnnotations.parse(
     [
-        ["tier"],
-        ["premium"],
+        ["status", "tier"],
+        ["draft", "premium"],
     ]
 )
 # --8<-- [end:literal-error]
@@ -134,8 +134,8 @@ Hint: Check the cell value or adjust the field parser for this syntax.
 
 # --8<-- [start:optional-contract]
 class ReviewAnnotations(RowTable):
-    reviewer_id: int | None = field("reviewer id")
-    backup_owner: str | None = field("backup owner")
+    reviewer_id: int | None = field("reviewer id", empty="parse")
+    backup_owner: str | None = field("backup owner", empty="parse")
 # --8<-- [end:optional-contract]
 
 # --8<-- [start:optional-parse]
@@ -163,28 +163,17 @@ assert reviews[1].backup_owner == "Priya"
 
 # --8<-- [start:list-raw-contract]
 class TagAnnotations(RowTable):
-    tags: list[str] = field("tags")
-    scores: list[int] = field("scores")
+    tags: list[str] = field("tags", required=True)
 # --8<-- [end:list-raw-contract]
 
 # --8<-- [start:list-raw-parse]
-record = TagAnnotations.parse(
-    [
-        ["tags", "scores"],
-        ["qa, docs", "1, 2"],
-    ]
-)[0]
-
-assert record.tags == "qa, docs"
-assert record.scores == "1, 2"
+SchemaDefinitionError: Field 'tags' has no parser and would remain text, but its
+annotation does not accept raw str values; add an explicit parser or use a
+supported annotation (schema=TagAnnotations)
 # --8<-- [end:list-raw-parse]
 
 # --8<-- [start:list-raw-output]
->> record.as_dict()
-{'tags': 'qa, docs', 'scores': '1, 2'}
-
->> type(record.tags), type(record.scores)
-(<class 'str'>, <class 'str'>)
+Use an explicit parser when the annotation describes a project-owned result.
 # --8<-- [end:list-raw-output]
 
 # --8<-- [start:list-explicit-contract]
@@ -192,8 +181,10 @@ from talika import compose, each, integer, split
 
 
 class ExplicitListAnnotations(RowTable):
-    tags: list[str] = field("tags", parser=split(","))
-    scores: list[int] = field("scores", parser=compose(split(","), each(integer())))
+    tags: list[str] = field("tags", required=True, parser=split(","))
+    scores: list[int] = field(
+        "scores", required=True, parser=compose(split(","), each(integer()))
+    )
 # --8<-- [end:list-explicit-contract]
 
 # --8<-- [start:list-explicit-parse]
@@ -218,7 +209,7 @@ from talika import string
 
 
 class OverrideAnnotations(RowTable):
-    code: int = field("code", parser=string(upper=True))
+    code: int = field("code", required=True, parser=string(upper=True))
 # --8<-- [end:explicit-parser-contract]
 
 # --8<-- [start:explicit-parser-parse]
@@ -234,12 +225,17 @@ assert record.code == "MANY"
 
 # --8<-- [start:unsupported-contract]
 class InternalId:
-    pass
+    def __init__(self, value):
+        self.value = value
 
 
 class UnsupportedAnnotations(RowTable):
-    value: InternalId = field("value")
-    mixed: int | float = field("mixed")
+    value: InternalId = field(
+        "value", required=True, parser=lambda value, context: InternalId(value)
+    )
+    mixed: int | float = field(
+        "mixed", required=True, parser=lambda value, context: float(value)
+    )
 # --8<-- [end:unsupported-contract]
 
 # --8<-- [start:unsupported-parse]
@@ -250,8 +246,8 @@ record = UnsupportedAnnotations.parse(
     ]
 )[0]
 
-assert record.value == "raw-id"
-assert record.mixed == "12.5"
+assert record.value.value == "raw-id"
+assert record.mixed == 12.5
 # --8<-- [end:unsupported-parse]
 
 # --8<-- [start:int-error]

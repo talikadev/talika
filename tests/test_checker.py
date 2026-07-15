@@ -31,7 +31,7 @@ FEATURE = """Feature: Static checking
 
 class CheckedUserTable(RowTable):
     name = field("name", required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
 
 
 FEATURE_PATH = "tests/data/invalid_users.feature"
@@ -329,7 +329,7 @@ def test_scenario_outlines_expand_with_compiled_values_and_source_locations(tmp_
 def test_outlines_count_each_example_and_keep_original_filters(tmp_path, capsys):
     class OutlineUsers(RowTable):
         name = field("name")
-        age: int = field("age")
+        age: int = field("age", required=True)
         token = field("token")
 
     path = tmp_path / "outline.feature"

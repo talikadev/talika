@@ -1,8 +1,8 @@
 # --8<-- [start:feature-users]
 Given the users exist
   | username | email             | role  | active |
-  | alice    | alice@example.com | admin | yes    |
-  | bob      | bob@example.com   |       | no     |
+  | alice    | alice@example.com | admin | true   |
+  | bob      | bob@example.com   |       | false  |
 # --8<-- [end:feature-users]
 
 # --8<-- [start:contract-basic]
@@ -10,18 +10,18 @@ from talika import RowTable, boolean, field, integer
 
 
 class UserFields(RowTable):
-    username = field("username", required=True)
-    email = field("email", required=True)
-    role = field("role", default="viewer")
-    active = field("active", parser=boolean(), default=True)
+    username = field(required=True)
+    email = field(required=True)
+    role = field(default="viewer")
+    active = field(parser=boolean(), default=True)
 # --8<-- [end:contract-basic]
 
 # --8<-- [start:parse-basic]
 users = UserFields.parse(
     [
         ["username", "email", "role", "active"],
-        ["alice", "alice@example.com", "admin", "yes"],
-        ["bob", "bob@example.com", "", "no"],
+        ["alice", "alice@example.com", "admin", "true"],
+        ["bob", "bob@example.com", "", "false"],
     ]
 )
 
@@ -45,7 +45,7 @@ UserFields(username='alice', email='alice@example.com', role='admin', active=Tru
 UserFields.parse(
     [
         ["email", "active"],
-        ["alice@example.com", "yes"],
+        ["alice@example.com", "true"],
     ]
 )
 # --8<-- [end:missing-required]
@@ -60,7 +60,7 @@ Hint: Add this field to the table, or make the schema field optional if the proj
 UserFields.parse(
     [
         ["username", "email", "active"],
-        ["", "alice@example.com", "yes"],
+        ["", "alice@example.com", "true"],
     ]
 )
 # --8<-- [end:empty-required]
@@ -119,7 +119,7 @@ class AccountFields(RowTable):
 accounts = AccountFields.parse(
     [
         ["username", "age", "active"],
-        ["alice", "34", "yes"],
+        ["alice", "34", "true"],
     ]
 )
 

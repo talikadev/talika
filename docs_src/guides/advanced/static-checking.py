@@ -13,7 +13,7 @@ from talika import RowTable, field
 
 class CheckedUserTable(RowTable):
     name = field("name", required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
 # --8<-- [end:schema]
 
 # --8<-- [start:discover-api]

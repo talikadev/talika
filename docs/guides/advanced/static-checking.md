@@ -188,8 +188,8 @@ keeps the normal top-level shape with `status="failed"`, zero matched tables,
 one error, and nullable table-specific diagnostic fields. Invalid command
 syntax remains argparse exit code `2`.
 
-Warnings are included in checker output but do not produce exit code `1`.
-Talika 0.3 defines the warning channel without adding a built-in warning.
+Warnings from validation hooks are included in checker output but do not
+produce exit code `1`. Error-severity diagnostics still control failure.
 
 When no tables match, the command prints:
 

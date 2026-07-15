@@ -20,7 +20,12 @@ from .checker import (
     discover_feature_tables,
 )
 from .context import CellContext, DefaultContext, ParseContext
-from .diagnostics import Diagnostic, DiagnosticSeverity, ValidationResult
+from .diagnostics import (
+    Diagnostic,
+    DiagnosticSeverity,
+    TalikaWarning,
+    ValidationResult,
+)
 from .dsl import CellDSL, CellDSLChain, compose_cell_dsls
 from .errors import (
     SchemaDefinitionError,
@@ -60,7 +65,7 @@ from .parsers import (
     split,
     string,
 )
-from .parsing import parse_table, parse_table_records, validate_table
+from .parsing import parse_table, parse_table_as, validate_table
 from .schema import ColumnTable, RowTable, TableFields
 from .sources import RecordSource
 from .table import TableCell, TableData
@@ -73,7 +78,7 @@ from .transformers import (
 try:
     __version__ = version("talika")
 except PackageNotFoundError:
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
 __all__ = [
     "TableError",
@@ -87,6 +92,7 @@ __all__ = [
     "ColumnGroupExpander",
     "Diagnostic",
     "DiagnosticSeverity",
+    "TalikaWarning",
     "Field",
     "FeatureDiagnostic",
     "FeatureTable",
@@ -127,7 +133,7 @@ __all__ = [
     "map_value",
     "optional",
     "parse_table",
-    "parse_table_records",
+    "parse_table_as",
     "validate_table",
     "reference",
     "check_feature",

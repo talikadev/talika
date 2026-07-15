@@ -19,7 +19,8 @@ authored table text
   -> field parsing
   -> records
   -> references and validation
-  -> output objects
+  -> parse() returns records
+  -> parse_as() builds output objects
 # --8<-- [end:lifecycle]
 
 # --8<-- [start:contract]

@@ -108,7 +108,7 @@ class RowWithId(RowTable):
 # --8<-- [end:row-factory-contract]
 
 # --8<-- [start:row-factory-parse]
-record = RowWithId.parse_records(
+record = RowWithId.parse(
     [
         ["user id"],
         ["U-7"],
@@ -215,23 +215,21 @@ Hint: Fill the cell, omit the field, or choose a different empty-cell policy for
 # --8<-- [end:empty-optional-error-output]
 
 # --8<-- [start:required-parse-empty]
-class RequiredParseEmpty(RowTable):
-    value = field("value", required=True, parser=parse_blank, empty="parse")
+class RequiredValue(RowTable):
+    value = field(required=True, parser=parse_blank)
 
 
-record = RequiredParseEmpty.parse(
+RequiredValue.parse(
     [
         ["value"],
         [""],
     ]
-)[0]
-
-assert record.value == "<blank>"
+)
 # --8<-- [end:required-parse-empty]
 
 # --8<-- [start:required-parse-empty-output]
->> record.as_dict()
-{'value': '<blank>'}
+Required field has an empty value
+(code=empty_required, schema=RequiredValue, field='value', row=2, column=1, value='')
 # --8<-- [end:required-parse-empty-output]
 
 # --8<-- [start:default-factory-error]

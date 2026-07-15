@@ -11,9 +11,9 @@ injection keeps BDD step functions cleaner.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 import pytest
 
@@ -23,6 +23,7 @@ from .schema import BaseTable
 from .table import RawTable, TableCell, TableData
 
 TableT = TypeVar("TableT", bound=BaseTable)
+OutputT = TypeVar("OutputT")
 
 
 class TalikaParser:
@@ -59,11 +60,11 @@ class TalikaParser:
         self,
         datatable: RawTable | TableData,
         *,
-        schema: type[BaseTable],
+        schema: type[TableT],
         context: Mapping[str, Any] | ParseContext | None = None,
         error_mode: str = "first",
-    ) -> list[Any]:
-        """Parse a table with the requested schema.
+    ) -> list[TableT]:
+        """Parse a table into validated schema records.
 
         Args:
             datatable: Raw pytest-bdd table or source-aware ``TableData``.
@@ -72,8 +73,16 @@ class TalikaParser:
             error_mode: ``"first"`` or ``"collect"``.
 
         Returns:
-            Public parse results, including output-model conversion when the
-            schema configures one.
+            Validated instances of ``schema``.
+
+        Raises:
+            ValueError: If ``error_mode`` is unsupported.
+            TableError: If parsing or validation fails in first-error mode.
+            TableErrors: If collect mode finds error-severity failures.
+
+        !!! note
+            Warning-severity validation diagnostics are emitted as
+            ``TalikaWarning`` and records are still returned.
 
         !!! info
             This method delegates directly to ``schema.parse``.
@@ -85,36 +94,64 @@ class TalikaParser:
             error_mode=error_mode,
         )
 
-    def parse_records(
+    @overload
+    def parse_as(
         self,
         datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT],
+        *,
+        schema: type[BaseTable],
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT]: ...
+
+    @overload
+    def parse_as(
+        self,
+        datatable: RawTable | TableData,
+        output_model: None = None,
         *,
         schema: type[TableT],
         context: Mapping[str, Any] | ParseContext | None = None,
         error_mode: str = "first",
-    ) -> list[TableT]:
-        """Parse a table and return validated schema records.
+    ) -> list[Any]: ...
 
-        This mirrors ``schema.parse_records(...)`` for pytest and pytest-bdd
-        steps that want type-checker-friendly schema instances instead of
-        optional output-model conversion.
+    def parse_as(
+        self,
+        datatable: RawTable | TableData,
+        output_model: Callable[..., OutputT] | None = None,
+        *,
+        schema: type[BaseTable],
+        context: Mapping[str, Any] | ParseContext | None = None,
+        error_mode: str = "first",
+    ) -> list[OutputT] | list[Any]:
+        """Parse a table and convert records into public output objects.
 
         Args:
             datatable: Raw pytest-bdd table or source-aware ``TableData``.
+            output_model: Optional callable receiving parsed record fields as
+                keyword arguments. When omitted, use configured output hooks.
             schema: Concrete ``RowTable`` or ``ColumnTable`` subclass.
             context: Optional project data or existing parse context.
             error_mode: ``"first"`` or ``"collect"``.
 
         Returns:
-            Validated instances of ``schema``.
+            Converted output objects.
 
-        !!! warning
-            This bypasses output-model conversion by design. Use ``parse`` when
-            the step should operate on the schema's public output objects.
+        Raises:
+            TypeError: If ``output_model`` is not callable.
+            ValueError: If no explicit or configured conversion exists.
+            TableError: If parsing, validation, or output construction fails.
+            TableErrors: If collect mode finds multiple failures.
+
+        !!! note
+            Warning-severity validation diagnostics are emitted as
+            ``TalikaWarning`` and converted objects are still returned.
 
         """
-        return schema.parse_records(
+        return schema.parse_as(
             self._source_table(datatable),
+            output_model,
             context=context,
             error_mode=error_mode,
         )
@@ -134,7 +171,8 @@ class TalikaParser:
             context: Optional project data or existing parse context.
 
         Returns:
-            Complete schema records or ordered table diagnostics.
+            Complete schema records and ordered table diagnostics.
+            Warning-only results remain valid and retain records.
 
         """
         return schema.validate(self._source_table(datatable), context=context)

@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Any, cast
 
 from .context import ParseContext
-from .engine_types import ErrorCollector, SchemaRuntime
+from .diagnostics import DiagnosticSeverity
+from .engine_types import DiagnosticCollector, SchemaRuntime
 from .errors import SchemaDefinitionError, TableError, TableErrorCode, TableErrors
 
 
@@ -13,7 +14,7 @@ def run_validation(
     schema: type[SchemaRuntime],
     records: list[Any],
     parse_context: ParseContext,
-    errors: ErrorCollector,
+    errors: DiagnosticCollector,
 ) -> None:
     """Run compiled record hooks in order, followed by the table hook."""
     for record in records:
@@ -25,10 +26,15 @@ def run_validation(
         try:
             validator(record, parse_context)
         except TableError as exc:
-            if errors is None:
+            schema._report(exc, errors, allow_warning=True)
+        except TableErrors as exc:
+            if not any(
+                item.severity is DiagnosticSeverity.WARNING for item in exc.errors
+            ):
                 raise
-            errors.append(exc)
-        except (TableErrors, SchemaDefinitionError):
+            for item in exc.errors:
+                schema._report(item, errors, allow_warning=True)
+        except SchemaDefinitionError:
             raise
         except Exception as exc:
             error = TableError(
@@ -41,7 +47,7 @@ def run_validation(
                 code=TableErrorCode.RECORD_VALIDATION_FAILED,
                 cause=exc,
             )
-            schema._report(error, errors)
+            schema._report(error, errors, allow_warning=True)
 
     table_validator = schema.__schema_plan__.hooks.validate_records
     if table_validator is None:
@@ -49,8 +55,13 @@ def run_validation(
     try:
         table_validator(records, parse_context)
     except TableError as exc:
-        schema._report(exc, errors)
-    except (TableErrors, SchemaDefinitionError):
+        schema._report(exc, errors, allow_warning=True)
+    except TableErrors as exc:
+        if not any(item.severity is DiagnosticSeverity.WARNING for item in exc.errors):
+            raise
+        for item in exc.errors:
+            schema._report(item, errors, allow_warning=True)
+    except SchemaDefinitionError:
         raise
     except Exception as exc:
         error = TableError(
@@ -60,4 +71,4 @@ def run_validation(
             source_uri=(records[0].table_source.source_uri if records else None),
             cause=exc,
         )
-        schema._report(error, errors)
+        schema._report(error, errors, allow_warning=True)

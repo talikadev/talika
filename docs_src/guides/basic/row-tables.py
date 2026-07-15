@@ -130,7 +130,7 @@ class UserWithId(RowTable):
 # --8<-- [end:id-contract]
 
 # --8<-- [start:id-parse]
-users = UserWithId.parse_records(
+users = UserWithId.parse(
     [
         ["display name", "user id"],
         ["alice rao", "U-100"],

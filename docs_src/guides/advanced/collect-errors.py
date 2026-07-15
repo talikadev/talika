@@ -79,14 +79,14 @@ if collected is not None:
 # --8<-- [end:inspect-errors-output]
 
 # --8<-- [start:entrypoints]
-from talika import parse_table, parse_table_records
+from talika import parse_table, parse_table_as
 
 
 ImportedUserTable.parse(bad_users, error_mode="collect")
-ImportedUserTable.parse_records(bad_users, error_mode="collect")
+ImportedUserTable.parse_as(bad_users, dict, error_mode="collect")
 
 parse_table(ImportedUserTable, bad_users, error_mode="collect")
-parse_table_records(ImportedUserTable, bad_users, error_mode="collect")
+parse_table_as(ImportedUserTable, bad_users, dict, error_mode="collect")
 
 
 def imported_users(datatable, talika):

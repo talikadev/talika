@@ -8,7 +8,7 @@ from talika import (
     field,
     integer,
     parse_table,
-    parse_table_records,
+    parse_table_as,
 )
 
 
@@ -28,7 +28,7 @@ def test_parse_table_matches_schema_parse():
     assert functional[0].age == 30
 
 
-def test_parse_table_records_returns_schema_records_with_output_model():
+def test_parse_table_as_uses_configured_output_model():
     @dataclass(frozen=True)
     class User:
         name: str
@@ -38,12 +38,27 @@ def test_parse_table_records_returns_schema_records_with_output_model():
 
         name = field("name", required=True)
 
-    public_users = parse_table(OutputUserTable, [["name"], ["Alice"]])
-    records = parse_table_records(OutputUserTable, [["name"], ["Alice"]])
+    records = parse_table(OutputUserTable, [["name"], ["Alice"]])
+    public_users = parse_table_as(OutputUserTable, [["name"], ["Alice"]])
 
     assert public_users == [User(name="Alice")]
     assert isinstance(records[0], OutputUserTable)
     assert records[0].name == "Alice"
+
+
+def test_parse_table_as_accepts_an_explicit_output_model():
+    @dataclass(frozen=True)
+    class User:
+        name: str
+        age: int
+
+    users = parse_table_as(
+        UserTable,
+        [["name", "age"], ["Alice", "30"]],
+        User,
+    )
+
+    assert users == [User(name="Alice", age=30)]
 
 
 def test_parse_table_forwards_context():

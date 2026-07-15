@@ -25,8 +25,11 @@ from talika import RowTable, boolean, field, split
 
 class UserTable(RowTable):
     name = field("name", required=True)
-    age: int = field("age")
-    active = field("active", parser=boolean())
+    age: int = field("age", required=True)
+    active = field(
+        "active",
+        parser=boolean(true_values=("yes",), false_values=("no",)),
+    )
     roles = field("roles", parser=split(","))
-    state: Literal["draft", "published"] = field("state")
+    state: Literal["draft", "published"] = field("state", required=True)
 # --8<-- [end:contract]

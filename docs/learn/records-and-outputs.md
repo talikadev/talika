@@ -39,34 +39,33 @@ two jobs should stay separate.
 
 ## Sometimes you want project objects directly
 
-A schema can build a public output object after parsing and validation:
+A schema can configure a public output object after parsing and validation:
 
 ```python title="A dataclass output"
 --8<-- "docs_src/learn/records-and-outputs.py:dataclass-output"
 ```
 
-Now normal parsing can return `User` objects, while record parsing still gives
-access to Talika's source-aware record.
+Parsing still returns Talika records. Conversion is an explicit second API:
 
-```python title="parse() versus parse_records()"
+```python title="parse() versus parse_as()"
 --8<-- "docs_src/learn/records-and-outputs.py:parse-vs-records"
 ```
 
 ## The practical distinction
 
-Use `parse()` when the step wants the schema's normal output. Use
-`parse_records()` when you need the intermediate record: source metadata,
-`as_dict()`, or table-focused validation support.
+Use `parse()` for schema records: source metadata, `as_dict()`, and
+table-focused validation support. Use `parse_as()` when the caller is ready
+for a dataclass, Pydantic model, or another project object.
 
 The output-model guide shows how to [add a dataclass output model](../guides/advanced/output-models.md#add-a-dataclass-output-model){ data-preview }
 and how to [choose the right return shape](../guides/advanced/output-models.md#choose-the-right-return-shape){ data-preview }.
 
 !!! note "The names are literal"
-    `parse()` means "give me the public parsed result." `parse_records()` means
-    "give me the table records before public output conversion."
+    `parse()` means "parse schema records." `parse_as()` means "parse, validate,
+    then convert those records."
 
 !!! note "Record values remain assignable"
     Schema declarations are frozen after compilation, but records returned by
-    `parse_records()` are not frozen in Talika 0.3. A caller may assign a
+    `parse()` are not frozen. A caller may assign a
     declared value after parsing. `table_source` cells and `table_extras`
     remain read-only so diagnostics cannot lose their original provenance.

@@ -69,7 +69,7 @@ UserTable.parse(datatable)
 # --8<-- [start:fixture-records-step]
 @given("the user records exist:", target_fixture="user_records")
 def user_records(datatable, talika):
-    return talika.parse_records(datatable, schema=UserTable)
+    return talika.parse(datatable, schema=UserTable)
 # --8<-- [end:fixture-records-step]
 
 # --8<-- [start:context-step]
@@ -99,13 +99,14 @@ ContextUserTable(username='QA-alice')
 # --8<-- [end:context-output]
 
 # --8<-- [start:functional-api]
-from talika import parse_table, parse_table_records
+from talika import parse_table, parse_table_as
 
 
-users = parse_table(UserTable, datatable)
-records = parse_table_records(UserTable, datatable)
+records = parse_table(UserTable, datatable)
+values = parse_table_as(UserTable, datatable, dict)
 
-assert users[0].username == "alice"
+assert records[0].username == "alice"
+assert values[0]["username"] == "alice"
 assert records[0].as_dict() == {
     "username": "alice",
     "age": 34,
@@ -130,8 +131,8 @@ class UserOutputTable(RowTable):
     age = field("age", parser=integer())
 
 
-public_users = UserOutputTable.parse(datatable)
-records = UserOutputTable.parse_records(datatable)
+records = UserOutputTable.parse(datatable)
+public_users = UserOutputTable.parse_as(datatable)
 
 assert public_users == [User(username="alice", age=34)]
 assert isinstance(records[0], UserOutputTable)

@@ -79,10 +79,20 @@ another may require exact uppercase tokens from an external system.
 --8<-- "docs_src/guides/basic/parser-factories.py:boolean-contract"
 ```
 
-The default `boolean()` parser accepts common values such as `true`, `false`,
-`yes`, `no`, `1`, `0`, `on`, and `off`. You can replace that vocabulary with
-project-specific true and false tokens. Set `case_sensitive=True` when the
-table must match exact casing.
+The default `boolean()` parser accepts only `true` and `false`. Matching is
+case-insensitive unless you set `case_sensitive=True`, so `TRUE`, `False`, and
+other case variations still have the same meaning.
+
+Values such as `yes`, `no`, `1`, `0`, `on`, and `off` are not universal
+booleans. If they belong to your project language, declare them through
+`true_values` and `false_values`, as the `lifecycle_active` field does above.
+Pass those options as collections of strings: `("yes",)` is a one-token tuple,
+while the bare string `"yes"` is rejected as an invalid declaration.
+
+!!! important "Boolean vocabulary belongs to the schema"
+    A reader should be able to discover every accepted spelling from the field
+    declaration. Talika does not hide a broad list of convenience tokens behind
+    `boolean()`.
 
 ```python title="Parsing boolean values"
 --8<-- "docs_src/guides/basic/parser-factories.py:boolean-parse"
@@ -107,6 +117,30 @@ Python truthiness:
     In plain Python, many non-empty strings are truthy. In a feature table,
     `"false"` should not accidentally become true. Talika's boolean parser only
     accepts the configured tokens.
+
+The parser also does not remove whitespace. This keeps normalization visible
+instead of silently changing authored cells. If the table format permits
+padding, compose that rule explicitly:
+
+```python title="Allowing padded boolean text"
+--8<-- "docs_src/guides/basic/parser-factories.py:boolean-whitespace"
+```
+
+!!! warning "Whitespace is part of the token"
+    The default parser rejects `" true "`. Use
+    `compose(string(strip=True), boolean())` only when the table contract says
+    surrounding whitespace is harmless.
+
+`describe()` reports the effective Boolean vocabulary and case policy. This is
+useful for CLI output, generated tooling, and reviews of a large schema:
+
+```python title="Inspecting Boolean parser configuration"
+--8<-- "docs_src/guides/basic/parser-factories.py:boolean-description"
+```
+
+!!! tip "Inspect the contract during a migration"
+    When replacing an older broad Boolean vocabulary, use `describe()` to
+    confirm which fields intentionally retain domain tokens such as `yes/no`.
 
 ## Choose Between Choice and Mapping
 
@@ -257,9 +291,11 @@ Use `optional(parser)` when an empty cell or a null-like token should become
 --8<-- "docs_src/guides/basic/parser-factories.py:optional-output"
 ```
 
-By default, `optional(...)` treats blank cells, `none`, and `null` as `None`.
-When you pass `none_values=...`, you are replacing the configured null-like
-tokens. Include every token your table should accept.
+`optional(...)` understands blank cells, `none`, and `null`. A blank reaches
+the parser only when the field declares `empty="parse"`; without that policy,
+the field handles the blank first. When you pass `none_values=...`, you are
+replacing the configured null-like tokens. Include every token your table
+should accept.
 
 ```python title="Replacing null-like tokens"
 --8<-- "docs_src/guides/basic/parser-factories.py:optional-replace-error"
@@ -301,7 +337,8 @@ defined. Each line below is a separate invalid parser declaration:
 ```
 
 These errors are not table data errors. They mean the parser declaration itself
-is contradictory or incomplete.
+is contradictory, incomplete, or uses an ambiguous argument shape such as a
+bare string where a collection of Boolean tokens is required.
 
 !!! tip "Keep parser declarations close to the field"
     When a parser is short, place it directly in `field(parser=...)`. When the

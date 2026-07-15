@@ -7,15 +7,15 @@ for row in rows:
     users.append({
         "name": raw["name"],
         "age": int(raw["age"]),
-        "active": raw["active"].lower() in {"true", "yes", "1"},
+        "active": raw["active"].lower() == "true",
     })
 # --8<-- [end:a]
 
 # --8<-- [start:b]
     Given The following users are present
       | name  | age | roles               | active |
-      | Akash | 27  | Developer,Manager   | Yes    |
-      | Badal | 25  | Tester,Scrum Master | No     |
+      | Akash | 27  | Developer,Manager   | True   |
+      | Badal | 25  | Tester,Scrum Master | False  |
 # --8<-- [end:b]
 
 
@@ -25,7 +25,7 @@ from talika import RowTable, boolean, field, split
 
 class UserTable(RowTable):# (1)!
     name = field("name", required=True) # (2)!
-    age: int = field("age") # (3)!
+    age: int = field("age", required=True) # (3)!
     roles = field("roles", parser=split(",")) # (4)!
     active = field("active", parser=boolean(), default=True) # (5)!
 
@@ -102,7 +102,7 @@ def generated_words(match, context):
 
 
 # --8<-- [start:h]
-records = UserTable.parse_records(datatable)
+records = UserTable.parse(datatable)
 
 users = [
     UserFactory(**record.as_dict())
@@ -125,9 +125,9 @@ class UserTable(RowTable):
     output_model = User
 
     name = field("name", required=True)
-    age: int = field("age")
+    age: int = field("age", required=True)
 
 
-users: list[User] = UserTable.parse(datatable)
+users: list[User] = UserTable.parse_as(datatable)
 
 # --8<-- [end:i]

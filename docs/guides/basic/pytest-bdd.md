@@ -98,7 +98,7 @@ lifecycle. It simply delegates to the schema passed with `schema=...`.
 
 During a pytest-bdd step, the plugin binds the feature's absolute filename and
 Gherkin cell coordinates to the exact raw `datatable` object. Calling
-`talika.parse(...)`, `talika.parse_records(...)`, or `talika.validate(...)`
+`talika.parse(...)`, `talika.parse_as(...)`, or `talika.validate(...)`
 upgrades that object to source-aware `TableData`, then clears the binding after
 the step succeeds or fails. Each fixture instance keeps its own binding, so
 parallel tests do not share provenance.
@@ -162,17 +162,15 @@ where they become hard to update consistently.
     a mapping that is passed as `context=...`, then read through
     `context.user_data` by parsers and validators.
 
-## Choose `parse` or `parse_records`
+## Choose `parse` or `parse_as`
 
-Both schema methods and the `talika` fixture expose two parsing forms.
+Both schema methods and the `talika` fixture expose two clear forms.
 
-Use `parse(...)` when the step should receive the schema's public output. If
-the schema has an `output_model` or custom output builder, `parse(...)` returns
-those output objects.
+Use `parse(...)` when the step should receive Talika schema records.
 
-Use `parse_records(...)` when the step specifically needs Talika schema
-records, source metadata, `source_for(...)`, or type-checker-friendly schema
-instances.
+Use `parse_as(...)` when the step should receive a dataclass, Pydantic model,
+or custom output object. Pass a callable explicitly, or omit it to use a
+configured `output_model` or `build_output()`.
 
 ```python title="Schema records through the fixture"
 --8<-- "docs_src/guides/basic/pytest-bdd.py:fixture-records-step"
@@ -184,13 +182,13 @@ The difference matters when a schema uses output conversion:
 --8<-- "docs_src/guides/basic/pytest-bdd.py:output-model"
 ```
 
-```bash { .talika-terminal title="parse vs parse_records" .speed-3}
+```bash { .talika-terminal title="parse vs parse_as" .speed-3}
 --8<-- "docs_src/guides/basic/pytest-bdd.py:output-model-output"
 ```
 
 !!! warning "Use records when you need source metadata"
     Output objects are often plain dataclasses or domain models. They may not
-    carry Talika metadata. Use `parse_records(...)` when a step needs
+    carry Talika metadata. Use `parse(...)` when a step needs
     `table_source`, `source_for(...)`, or intermediate schema fields.
 
 ## Validate Without Raising
@@ -219,7 +217,7 @@ functional helpers for that style.
 These helpers delegate to the same schema lifecycle:
 
 - `parse_table(UserTable, datatable)` is equivalent to `UserTable.parse(datatable)`
-- `parse_table_records(UserTable, datatable)` is equivalent to `UserTable.parse_records(datatable)`
+- `parse_table_as(UserTable, datatable, User)` is equivalent to `UserTable.parse_as(datatable, User)`
 - `validate_table(UserTable, datatable)` is equivalent to `UserTable.validate(datatable)`
 
 They forward `context=...` and `error_mode=...` just like the schema methods.
