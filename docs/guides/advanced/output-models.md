@@ -119,8 +119,8 @@ file. The schema record is the right object for that job.
 The output target does not have to live on the schema. Pass any callable that
 accepts the record fields as keyword arguments:
 
-```python
-users = UserTable.parse_as(users_table, User)
+```python title="Choose an output model for one call"
+--8<-- "docs_src/guides/advanced/output-models.py:one-call-output-model"
 ```
 
 An explicit target takes precedence over configured base or variant output

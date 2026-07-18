@@ -24,6 +24,9 @@ In this table, there is no `active` field at all:
 A schema can safely say, "when authors do not mention this field, use the
 project default."
 
+Because the label is absent, the same rule applies to every record in that
+table. There is no authored `active` cell to parse or point to in a diagnostic.
+
 ```python title="A default for the absent field"
 --8<-- "docs_src/learn/missing-empty-defaults.py:contract"
 ```

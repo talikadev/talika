@@ -196,9 +196,8 @@ The difference matters when a schema uses output conversion:
 Use the fixture's `validate(...)` method when a step or helper needs structured
 diagnostics instead of an exception:
 
-```python
-result = talika.validate(datatable, schema=UserTable)
-assert result.valid, result.errors
+```python title="Validate through the pytest-bdd fixture"
+--8<-- "docs_src/guides/basic/pytest-bdd.py:validate-step"
 ```
 
 Validation returns schema records only when the complete table is valid and

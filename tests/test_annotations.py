@@ -1,3 +1,5 @@
+from datetime import date as Date
+from datetime import datetime as DateTime
 from decimal import Decimal
 from enum import Enum
 from typing import Literal
@@ -43,6 +45,41 @@ def test_annotations_infer_supported_scalar_parsers():
     assert record.status is Status.PUBLISHED
 
 
+def test_annotations_infer_date_and_datetime_parsers():
+    class EventTable(RowTable):
+        event_date: Date = field("event date", required=True)
+        starts_at: DateTime = field("starts at", required=True)
+
+    record = EventTable.parse(
+        [
+            ["event date", "starts at"],
+            ["2026-07-18", "2026-07-18T14:30:45"],
+        ]
+    )[0]
+
+    assert record.event_date == Date(2026, 7, 18)
+    assert record.starts_at == DateTime(2026, 7, 18, 14, 30, 45)
+
+
+def test_annotations_infer_optional_temporal_parsers():
+    class EventTable(RowTable):
+        event_date: Date | None = field("event date", empty="parse")
+        starts_at: DateTime | None = field("starts at", empty="parse")
+
+    empty, populated = EventTable.parse(
+        [
+            ["event date", "starts at"],
+            ["", ""],
+            ["2026-07-18", "2026-07-18T14:30:45"],
+        ]
+    )
+
+    assert empty.event_date is None
+    assert empty.starts_at is None
+    assert populated.event_date == Date(2026, 7, 18)
+    assert populated.starts_at == DateTime(2026, 7, 18, 14, 30, 45)
+
+
 def test_annotations_infer_optional_and_literal_parsers():
     class TypedTable(RowTable):
         age: int | None = field("age", empty="parse")
@@ -80,6 +117,17 @@ def test_explicit_parser_takes_precedence_over_annotation():
         count: int = field("count", required=True, parser=string(upper=True))
 
     assert TypedTable.parse([["count"], ["many"]])[0].count == "MANY"
+
+    class TemporalTable(RowTable):
+        event_date: Date = field(
+            "event date",
+            required=True,
+            parser=string(upper=True),
+        )
+
+    assert TemporalTable.parse([["event date"], ["someday"]])[0].event_date == (
+        "SOMEDAY"
+    )
 
 
 def test_unsupported_annotations_reject_implicit_raw_text():
@@ -168,6 +216,15 @@ def test_static_defaults_must_match_resolved_annotations():
 
         class InvalidDefault(RowTable):
             age: int = field("age", default="unknown", empty="error")
+
+    with pytest.raises(SchemaDefinitionError, match="default does not match"):
+
+        class DateCannotDefaultToDateTime(RowTable):
+            event_date: Date = field(
+                "event date",
+                default=DateTime(2026, 7, 18, 14, 30),
+                empty="error",
+            )
 
 
 def test_default_factories_and_explicit_parsers_are_trusted():

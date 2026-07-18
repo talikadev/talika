@@ -141,13 +141,8 @@ Every `TableError` also exposes its immutable `diagnostic`. The aggregate's
 Use `Schema.validate(...)` when the caller wants the same safe collection
 behavior as a result value instead of a `TableErrors` exception.
 
-```python
-result = UserImport.validate(bad_table)
-
-assert not result.valid
-assert result.records == ()
-for diagnostic in result.errors:
-    print(diagnostic.code, diagnostic.row, diagnostic.column)
+```python title="Collect diagnostics as a result value"
+--8<-- "docs_src/guides/advanced/collect-errors.py:validate-result"
 ```
 
 `validate()` has no `error_mode`; it always collects what is safe within each

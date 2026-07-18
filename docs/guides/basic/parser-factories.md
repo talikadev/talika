@@ -12,8 +12,8 @@ tags:
 Parser factories create the callables you pass to `field(parser=...)`.
 
 A table cell starts as text. A parser decides what that text means for one
-field: maybe it becomes an integer, a boolean, a decimal, a normalized string,
-a domain value, a list, or `None`.
+field: maybe it becomes an integer, a boolean, a decimal, a date, a normalized
+string, a domain value, a list, or `None`.
 
 The factories in Talika are deliberately small. Each one does one clear job,
 and the composition helpers let you build larger parsing rules without hiding
@@ -64,6 +64,61 @@ binary floating-point behavior would make assertions harder to read.
     `string(...)` is useful even though the input is already text. It gives
     your schema a declared normalization rule, so every parsed record sees the
     same stripped or cased value.
+
+## Parse Dates And Datetimes
+
+Use `date()` and `datetime()` when table text represents standard-library
+temporal values.
+
+```gherkin title="Date and datetime values"
+--8<-- "docs_src/guides/basic/parser-factories.py:feature-temporal"
+```
+
+The default formats are deliberately strict and consistent across supported
+Python versions:
+
+- `date()` accepts `%Y-%m-%d`, such as `2026-07-18`.
+- `datetime()` accepts `%Y-%m-%dT%H:%M:%S`, such as
+  `2026-07-18T14:30:45`.
+
+Pass one `datetime.strptime()` format when the table uses another syntax.
+Formats containing `%z` return timezone-aware datetimes; Talika does not
+normalize the resulting offset.
+
+```python title="Temporal parser fields"
+--8<-- "docs_src/guides/basic/parser-factories.py:temporal-contract"
+```
+
+```python title="Parsing dates, custom formats, and offsets"
+--8<-- "docs_src/guides/basic/parser-factories.py:temporal-parse"
+```
+
+```bash { .talika-terminal title="Temporal parser result" .speed-3}
+--8<-- "docs_src/guides/basic/parser-factories.py:temporal-output"
+```
+
+The default datetime parser does not accept a space in place of `T`, omit
+seconds, add fractional seconds, or add a timezone. Configure those choices
+explicitly with directives such as `%f` and `%z`.
+
+Like the other strict parser factories, temporal parsers do not remove
+whitespace. Compose normalization when surrounding whitespace is valid table
+syntax:
+
+```python title="Making temporal whitespace explicit"
+--8<-- "docs_src/guides/basic/parser-factories.py:temporal-whitespace"
+```
+
+Invalid calendar values and format mismatches use the normal source-aware
+`parser_failed` diagnostic:
+
+```python title="Invalid temporal values"
+--8<-- "docs_src/guides/basic/parser-factories.py:temporal-errors"
+```
+
+`describe()` includes the effective format, for example
+`date(format='%Y-%m-%d')` or
+`datetime(format='%d/%m/%Y %H:%M')`.
 
 ## Parse Boolean Vocabulary
 

@@ -51,21 +51,34 @@ Adding a required field breaks old tables immediately. Sometimes that is the
 right choice. Other times the field should start as optional with a default, so
 old scenarios remain valid while new scenarios can be more explicit.
 
+Choose between those paths by asking whether an old table still describes a
+valid scenario without the new field. If it does not, make the field required
+and update the affected tables together. If omission still has a clear meaning,
+introduce the field as optional and document the fallback in the schema.
+
 !!! warning "Defaults can hide change"
     A default is convenient, but it also makes omitted data look intentional.
     Use it when omission is genuinely acceptable, not just to avoid updating
     tables.
 
-## Preserving old information
+## Preserve variant data during migration
 
-Some projects temporarily preserve old columns or variant-specific values while
-they migrate:
+Variant tables sometimes contain a value that belonged to an older record
+shape. During a controlled migration, a project can preserve that known but
+inapplicable value instead of treating it as an active field:
 
-```python title="A legacy transition idea"
+```python title="Preserving known variant fields during migration"
 --8<-- "docs_src/learn/evolving-tables.py:preserve"
 ```
 
-That should be a short-lived compatibility strategy, not the permanent design.
+Preserved values live in `record.table_extras`; they do not appear in
+`record.as_dict()` or become attributes on the selected variant. This policy
+only applies to labels declared elsewhere in the variant family. Completely
+unknown labels still follow the schema's `unknown_fields` policy.
+
+Use preservation as a short-lived compatibility strategy while authors clean
+up old tables. The [inapplicable-fields guide](../guides/advanced/inapplicable-fields.md#preserve-inapplicable-values){ data-preview }
+shows how to inspect and eventually remove the preserved values.
 
 ## CI makes evolution safer
 

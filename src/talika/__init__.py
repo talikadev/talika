@@ -56,6 +56,8 @@ from .parsers import (
     boolean,
     choice,
     compose,
+    date,
+    datetime,
     decimal,
     each,
     floating,
@@ -78,7 +80,7 @@ from .transformers import (
 try:
     __version__ = version("talika")
 except PackageNotFoundError:
-    __version__ = "0.4.0"
+    __version__ = "0.5.0"
 
 __all__ = [
     "TableError",
@@ -123,6 +125,8 @@ __all__ = [
     "compose",
     "compose_cell_dsls",
     "compose_transformers",
+    "date",
+    "datetime",
     "decimal",
     "discriminator",
     "discriminator_field",

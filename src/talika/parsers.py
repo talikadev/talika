@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date as Date
+from datetime import datetime as DateTime
 from decimal import Decimal
 from typing import Any
 
@@ -203,6 +205,104 @@ def decimal() -> Parser:
     return parse
 
 
+def _validate_temporal_format(format: str, *, parser_name: str) -> None:
+    """Validate a date or datetime parser format declaration."""
+    if not isinstance(format, str):
+        raise TypeError(f"{parser_name} format must be a string")
+    if not format:
+        raise ValueError(f"{parser_name} format cannot be empty")
+
+
+@dataclass(frozen=True, slots=True)
+class _DateParser:
+    format: str
+
+    @property
+    def description(self) -> str:
+        """Return the configured date parser contract."""
+        return f"date(format={self.format!r})"
+
+    def __call__(self, value: Any, context: CellContext) -> Date:
+        """Parse one value into a calendar date."""
+        return DateTime.strptime(str(value), self.format).date()
+
+
+def date(*, format: str = "%Y-%m-%d") -> Parser:
+    """Return a parser that converts text to ``datetime.date``.
+
+    Args:
+        format: One deterministic ``datetime.strptime`` format. The default
+            accepts dates written as ``YYYY-MM-DD``.
+
+    Returns:
+        A parser that returns a Python ``date``.
+
+    Raises:
+        TypeError: If ``format`` is not a string.
+        ValueError: If ``format`` is empty.
+
+    !!! warning
+        The parser does not strip whitespace or try several formats. Compose
+        it with ``string(strip=True)`` or configure the exact format when the
+        authored table uses a different syntax.
+
+    !!! example
+        ```python
+        class Schedule(RowTable):
+            due = field("due", parser=date())
+            reviewed = field("reviewed", parser=date(format="%d/%m/%Y"))
+        ```
+
+    """
+    _validate_temporal_format(format, parser_name="date")
+    return _DateParser(format)
+
+
+@dataclass(frozen=True, slots=True)
+class _DateTimeParser:
+    format: str
+
+    @property
+    def description(self) -> str:
+        """Return the configured datetime parser contract."""
+        return f"datetime(format={self.format!r})"
+
+    def __call__(self, value: Any, context: CellContext) -> DateTime:
+        """Parse one value into a date and time."""
+        return DateTime.strptime(str(value), self.format)
+
+
+def datetime(*, format: str = "%Y-%m-%dT%H:%M:%S") -> Parser:
+    """Return a parser that converts text to ``datetime.datetime``.
+
+    Args:
+        format: One deterministic ``datetime.strptime`` format. The default
+            accepts datetimes written as ``YYYY-MM-DDTHH:MM:SS``.
+
+    Returns:
+        A parser that returns a Python ``datetime``. The default format creates
+        a naive value; formats containing ``%z`` create timezone-aware values.
+
+    Raises:
+        TypeError: If ``format`` is not a string.
+        ValueError: If ``format`` is empty.
+
+    !!! warning
+        The parser does not strip whitespace, normalize timezones, or accept
+        ISO variants that are absent from the configured format.
+
+    !!! example
+        ```python
+        class Events(RowTable):
+            created = field("created", parser=datetime())
+            local = field("local", parser=datetime(format="%d/%m/%Y %H:%M"))
+        ```
+
+    """
+    _validate_temporal_format(format, parser_name="datetime")
+    return _DateTimeParser(format)
+
+
 @dataclass(frozen=True, slots=True)
 class _BooleanParser:
     accepted_true: frozenset[str]
@@ -231,7 +331,7 @@ class _BooleanParser:
 
 
 def _configured_parser_description(value: Any) -> str | None:
-    if isinstance(value, _BooleanParser):
+    if isinstance(value, (_BooleanParser, _DateParser, _DateTimeParser)):
         return value.description
     return None
 

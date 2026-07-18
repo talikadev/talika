@@ -102,7 +102,8 @@ This is useful for generated docs that need to show which fields apply to
 ## Inspect Configured Hooks
 
 Contracts also name configured hooks such as table transformers and output
-models.
+models. This makes the lifecycle visible to inspection tools without executing
+the hooks or exposing private compiled-schema objects.
 
 ```python title="A schema with transformer and output hooks"
 --8<-- "docs_src/guides/advanced/schema-contracts.py:hook-schema"
@@ -114,7 +115,8 @@ models.
 
 This is enough for a tool to say, "This schema uses a grouped-column
 transformer and builds `ContentItem` objects", without importing private
-implementation details.
+implementation details. Hook names are descriptive metadata, so use them for
+display and comparison rather than trying to call them from the contract.
 
 ## Use CLI Describe
 
@@ -159,3 +161,8 @@ Schema contracts are useful for:
 They are not a replacement for parsing real tables. A contract can tell you
 that `Headline` is required. Static checking or normal parsing tells you
 whether a specific feature table actually provided it.
+
+!!! note "Describe expectations, validate examples"
+    Use `describe()` to explain the contract and build tooling around it. Use
+    `validate()`, static checking, or `parse()` when you need to prove that an
+    authored table satisfies that contract.

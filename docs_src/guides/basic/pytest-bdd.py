@@ -146,6 +146,12 @@ assert isinstance(records[0], UserOutputTable)
 UserOutputTable(username='alice', age=34)
 # --8<-- [end:output-model-output]
 
+# --8<-- [start:validate-step]
+result = talika.validate(datatable, schema=UserTable)
+
+assert result.valid, result.errors
+# --8<-- [end:validate-step]
+
 # --8<-- [start:collect-step]
 class StrictUserTable(RowTable):
     username = field("username", required=True)

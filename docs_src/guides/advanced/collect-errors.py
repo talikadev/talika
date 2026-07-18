@@ -78,6 +78,16 @@ if collected is not None:
 {'code': 'parser_failed', 'field': 'age', 'row': 2, 'column': 2, 'value': 'old'}
 # --8<-- [end:inspect-errors-output]
 
+# --8<-- [start:validate-result]
+result = ImportedUserTable.validate(bad_users)
+
+assert not result.valid
+assert result.records == ()
+
+for diagnostic in result.errors:
+    print(diagnostic.code, diagnostic.row, diagnostic.column)
+# --8<-- [end:validate-result]
+
 # --8<-- [start:entrypoints]
 from talika import parse_table, parse_table_as
 
