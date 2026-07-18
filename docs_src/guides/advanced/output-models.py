@@ -75,6 +75,10 @@ public_users = UserTable.parse_as(users_table)
 'UserTable'
 # --8<-- [end:parse-vs-records-output]
 
+# --8<-- [start:one-call-output-model]
+users = UserTable.parse_as(users_table, User)
+# --8<-- [end:one-call-output-model]
+
 # --8<-- [start:source-records]
 record = UserTable.parse(users_table)[0]
 

@@ -14,32 +14,53 @@ validation, static checking, pytest-bdd integration, and CLI JSON. This keeps a
 failure's code, source location, field identity, and values consistent no
 matter which entry point reports it.
 
-Use the raising APIs when invalid table data should fail immediately:
+Start with an ordinary feature table and schema. No diagnostic-specific schema
+configuration is required.
 
-```python
-records = UserTable.parse(datatable)
+```gherkin title="A table with an invalid age"
+--8<-- "docs_src/guides/advanced/diagnostics.py:feature-users"
 ```
 
-Use `validate()` when a tool, test, or editor needs a result value:
-
-```python
-result = UserTable.validate(datatable)
-
-if result.valid:
-    records = result.records
-else:
-    for diagnostic in result.errors:
-        print(diagnostic.code, diagnostic.row, diagnostic.column)
+```python title="The table contract"
+--8<-- "docs_src/guides/advanced/diagnostics.py:schema"
 ```
 
-The functional and pytest forms run the same lifecycle:
-
-```python
-from talika import validate_table
-
-result = validate_table(UserTable, datatable, context={"locale": "en"})
-result = talika.validate(datatable, schema=UserTable, context={"locale": "en"})
+```python title="The Python datatable"
+--8<-- "docs_src/guides/advanced/diagnostics.py:datatable"
 ```
+
+## Choose Raising or Non-Raising Validation
+
+Use the raising APIs when invalid table data should stop normal test setup. A
+failed `parse()` call raises `TableError`, or `TableErrors` when collect mode
+finds several independent failures.
+
+```python title="Raise when the table is invalid"
+--8<-- "docs_src/guides/advanced/diagnostics.py:raising-api"
+```
+
+Use `validate()` when a tool, test, or editor needs to inspect a result value
+without catching authored-data exceptions:
+
+```python title="Return a validation result"
+--8<-- "docs_src/guides/advanced/diagnostics.py:validate-api"
+```
+
+```bash { .talika-terminal title="Inspecting an invalid result" .speed-3}
+--8<-- "docs_src/guides/advanced/diagnostics.py:validation-output"
+```
+
+The functional and pytest-bdd forms run the same lifecycle. They are useful
+when a project prefers dependency injection or explicit function calls:
+
+```python title="Equivalent validation entry points"
+--8<-- "docs_src/guides/advanced/diagnostics.py:functional-api"
+```
+
+!!! tip "Choose the API at the call site"
+    A schema does not need separate raising and non-raising versions. Use
+    `parse()` in ordinary setup code and `validate()` where diagnostics are
+    data that another tool or assertion needs to inspect.
 
 ## Understand ValidationResult
 
@@ -54,23 +75,36 @@ Validation always uses safe collect semantics. It runs table transformation,
 field parsing, defaults, IDs, variants, references, and record/table
 validators. It deliberately skips output models and `build_output()`.
 
-```python
-result = UserTable.validate([["name", "age"], ["Alice", "bad"]])
-
-assert not result.valid
-assert result.records == ()
-assert result.errors[0].code == "parser_failed"
+```python title="An invalid result never contains partial records"
+--8<-- "docs_src/guides/advanced/diagnostics.py:invalid-result"
 ```
 
 Invalid results never expose partially parsed records. This prevents callers
 from accidentally using records produced before a later field, reference, or
 validator failed. Successful records remain mutable, matching `parse()`.
 
-## Validation warnings
+!!! note "Declaration and API errors still raise"
+    `validate()` handles authored table-data diagnostics without raising.
+    Invalid schema families, unsupported `error_mode` values, and other API
+    misuse still raise because they cannot be represented as a table result.
+
+## Keep Warnings Without Invalidating Records
 
 Validation hooks may raise a `TableError` with
 `severity=DiagnosticSeverity.WARNING`. Warning-only validation remains valid
 and keeps its complete records.
+
+```python title="A record validator that reports a warning"
+--8<-- "docs_src/guides/advanced/diagnostics.py:warning-schema"
+```
+
+```python title="Validate a warning-only table"
+--8<-- "docs_src/guides/advanced/diagnostics.py:warning-validate"
+```
+
+```bash { .talika-terminal title="A valid result with one warning" .speed-3}
+--8<-- "docs_src/guides/advanced/diagnostics.py:warning-output"
+```
 
 `validate()` returns warnings in `result.diagnostics` and `result.warnings`.
 The raising APIs emit a public `TalikaWarning` through Python's warnings system
@@ -78,24 +112,21 @@ and still return their data. If warnings and errors coexist, warnings remain in
 discovery order, no partial records are returned, and raising APIs emit the
 warnings before raising the error failures.
 
-Schema declaration errors and API misuse still raise. For example, an invalid
-schema family raises `SchemaDefinitionError`, and an unsupported `error_mode`
-raises `ValueError`; neither is authored table data.
+!!! warning "Warnings belong to validation"
+    A parser, default factory, or transformer must produce a value for later
+    lifecycle stages. Failures at those value-producing boundaries remain
+    errors even if a project-created `TableError` requests warning severity.
 
-## Read A Diagnostic
+## Read a Diagnostic
 
 `Diagnostic` is a frozen, slotted value with `diagnostic_version = 1`.
 
-```python
-diagnostic = result.diagnostics[0]
+```python title="Select stable diagnostic fields"
+--8<-- "docs_src/guides/advanced/diagnostics.py:inspect-diagnostic"
+```
 
-print(diagnostic.code)          # parser_failed
-print(diagnostic.severity)      # DiagnosticSeverity.ERROR
-print(diagnostic.schema_name)   # UserTable
-print(diagnostic.field_name)    # age
-print(diagnostic.field_label)   # Age
-print(diagnostic.source_uri)    # file:///.../users.feature, when known
-print(diagnostic.row, diagnostic.column)
+```bash { .talika-terminal title="Structured parser diagnostic" .speed-3}
+--8<-- "docs_src/guides/advanced/diagnostics.py:diagnostic-output"
 ```
 
 `field_name` identifies the Python declaration. `field_label` identifies the
@@ -106,11 +137,8 @@ but is retained as the field label.
 made available to later parsing. Both may be useful when compact syntax is
 expanded or normalized.
 
-```python
-if diagnostic.has_source_value:
-    print("authored:", diagnostic.source_value)
-if diagnostic.has_logical_value:
-    print("logical:", diagnostic.logical_value)
+```python title="Distinguish omitted values from explicit None"
+--8<-- "docs_src/guides/advanced/diagnostics.py:presence-flags"
 ```
 
 The `has_item_id`, `has_source_value`, and `has_logical_value` flags distinguish
@@ -122,10 +150,17 @@ distinction matters.
 excluded from equality and JSON because exceptions are not stable data.
 `as_dict()` returns deterministic JSON-compatible Model v1 fields.
 
-## Raising APIs Remain Compatible
+!!! note "Use structured data in integrations"
+    Human-readable exception text may improve over time. Test runners, editor
+    integrations, and other tools should use diagnostic attributes or
+    `as_dict()` instead of parsing formatted messages.
+
+## Keep Raising APIs Compatible
 
 `TableError`, `TableErrors`, and `SchemaDefinitionError` remain the exceptions
-used by existing applications.
+used by existing applications. The shared diagnostic model sits underneath
+these exceptions; adopting structured diagnostics does not require rewriting
+normal fail-fast parsing code.
 
 - `TableError.diagnostic` is the underlying immutable `Diagnostic`
 - legacy properties such as `schema`, `field`, `value`, `code`, and coordinates
@@ -136,6 +171,8 @@ used by existing applications.
 
 Formatted exception strings may gain source and explicit field information.
 Integrations should consume structured properties instead of parsing text.
+Application code can continue catching the public exception types, while
+tooling reads their `diagnostic` or `diagnostics` properties.
 
 ## Raise Deliberate Project Diagnostics
 
@@ -144,25 +181,8 @@ At every user extension boundary, a deliberate `TableError`, `TableErrors`, or
 default factories, transformers, reference-key parsers, validators, and output
 builders.
 
-```python
-from talika import TableError, field
-
-def project_code(value, context):
-    if not value.startswith("USR-"):
-        raise TableError(
-            "User code must start with USR-",
-            code="project_user_code",
-            schema=context.schema,
-            field_name=context.field_name,
-            field_label=context.field_label,
-            source_uri=context.source_uri,
-            row=context.row,
-            column=context.column,
-            source_value=context.source_value,
-        )
-    return value
-
-code = field("Code", parser=project_code)
+```python title="A project-owned parser diagnostic"
+--8<-- "docs_src/guides/advanced/diagnostics.py:project-diagnostic"
 ```
 
 Raise an ordinary exception when Talika should classify the extension point:
@@ -230,6 +250,10 @@ diagnostic or format version.
 
 ## Choose An API
 
+Choose the narrowest return type the caller needs. Runtime setup usually wants
+records or output objects immediately, while checkers and editor integrations
+need diagnostics they can retain, filter, and serialize.
+
 - Use `parse()` for raising validation that returns schema records.
 - Use `parse_as()` for explicit or configured output conversion.
 - Use `validate()` for non-raising tooling and complete-table acceptance.
@@ -237,3 +261,8 @@ diagnostic or format version.
 - Use CLI JSON when another process needs versioned deterministic data.
 
 All of these entry points share the compiled schema and diagnostic lifecycle.
+
+!!! tip "Keep one schema contract"
+    Switching entry points changes how results are delivered, not what the
+    table means. Reuse the same schema for runtime parsing, non-raising checks,
+    pytest-bdd steps, and CLI validation.

@@ -3,6 +3,7 @@ Given the users exist
   | name | age | email           | manager |
   | Mira | old | mira@example.io |         |
   |      | 29  | mira@example.io | unknown |
+  | Noah | 15  | noah@example.io |         |
 # --8<-- [end:gherkin]
 
 # --8<-- [start:field-error]
@@ -14,6 +15,11 @@ Field parser failed: invalid literal for int() with base 10: 'old'
 Required field has an empty value
 (code=empty_required, field='name', row=3, column=1, value='')
 # --8<-- [end:required-error]
+
+# --8<-- [start:record-error]
+Record validation failed: users must be at least 18
+(code=record_validation_failed, schema=UserTable, row=4)
+# --8<-- [end:record-error]
 
 # --8<-- [start:table-error]
 Emails must be unique

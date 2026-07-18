@@ -76,12 +76,8 @@ schema from changing meaning between two parses.
 
 To specialize a contract, declare a subclass and replace the field there:
 
-```python
-class BaseUsers(RowTable):
-    name = field("name")
-
-class ImportedUsers(BaseUsers):
-    name = field("Full name")
+```python title="Specialize a field in a subclass"
+--8<-- "docs_src/guides/basic/fields.py:subclass-contract"
 ```
 
 The parent remains unchanged and each class receives its own compiled schema.
@@ -309,10 +305,13 @@ accepted, declare it as a field or as an alias for an existing field.
 
 ## Label Matching and Case Sensitivity
 
-By default, Talika's label matching is strict, exact, and case-sensitive. The string passed to `field(...)` or defined as an alias must match the table cell exactly, including casing and spacing:
+Label matching is exact and case-sensitive. A label passed to `field(...)`, or
+declared as an alias, must match the cell text Talika receives.
 
-- `field("username")` will **not** match a table header cell containing `Username` (capital U) or `username ` (with trailing whitespace).
-- Talika uses the cell text it receives. If a Gherkin parser or test framework trims visual table padding before passing the datatable to Talika, that happens outside Talika. Once the value reaches Talika, label matching is exact.
+For example, `field("username")` does not match `Username` or a value that
+still contains trailing whitespace. A Gherkin parser or test framework may
+remove visual table padding before passing the datatable to Talika; after that
+boundary, Talika does not normalize labels again.
 
 ```python title="Case sensitive label matching"
 --8<-- "docs_src/guides/basic/fields.py:case-sensitivity-error"

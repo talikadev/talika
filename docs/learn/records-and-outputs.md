@@ -41,6 +41,10 @@ two jobs should stay separate.
 
 A schema can configure a public output object after parsing and validation:
 
+Output conversion does not replace the table record or change how the table is
+checked. It is a final, explicit handoff for callers that no longer need source
+cells or other table-facing metadata.
+
 ```python title="A dataclass output"
 --8<-- "docs_src/learn/records-and-outputs.py:dataclass-output"
 ```

@@ -76,6 +76,30 @@ assert product.price == Decimal("19.99")
 assert product.available is True
 # --8<-- [end:scalar-parse]
 
+# --8<-- [start:temporal-contract]
+from datetime import date as Date
+from datetime import datetime as DateTime
+
+
+class EventAnnotations(RowTable):
+    event_date: Date = field("event date", required=True)
+    starts_at: DateTime = field("starts at", required=True)
+    completed_at: DateTime | None = field("completed at", empty="parse")
+# --8<-- [end:temporal-contract]
+
+# --8<-- [start:temporal-parse]
+event = EventAnnotations.parse(
+    [
+        ["event date", "starts at", "completed at"],
+        ["2026-07-18", "2026-07-18T14:30:45", ""],
+    ]
+)[0]
+
+assert event.event_date == Date(2026, 7, 18)
+assert event.starts_at == DateTime(2026, 7, 18, 14, 30, 45)
+assert event.completed_at is None
+# --8<-- [end:temporal-parse]
+
 # --8<-- [start:bool-error]
 ProductAnnotations.parse(
     [

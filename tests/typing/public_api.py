@@ -1,6 +1,8 @@
 """Static-typing smoke sample for the documented public API."""
 
 from dataclasses import dataclass
+from datetime import date as Date
+from datetime import datetime as DateTime
 
 from talika import (
     Diagnostic,
@@ -12,6 +14,8 @@ from talika import (
     TableErrors,
     ValidationResult,
     __version__,
+    date,
+    datetime,
     field,
     parse_table,
     parse_table_as,
@@ -28,6 +32,11 @@ class User:
 class UserTable(RowTable):
     name: str = field("name", required=True)
     age: int = field("age", required=True)
+
+
+class EventTable(RowTable):
+    event_date: Date = field("event date", required=True, parser=date())
+    starts_at: DateTime = field("starts at", required=True, parser=datetime())
 
 
 contract: TableContract = UserTable.describe()
@@ -64,3 +73,8 @@ table_error = TableError("Invalid table", code=TableErrorCode.TABLE_ERROR)
 table_errors = TableErrors([table_error])
 error_code: str = table_error.code
 error_count: int = len(table_errors)
+event = EventTable.parse(
+    [["event date", "starts at"], ["2026-07-18", "2026-07-18T14:30:45"]]
+)[0]
+event_date: Date = event.event_date
+starts_at: DateTime = event.starts_at

@@ -70,34 +70,33 @@ Call `parse()` at the point where your test setup receives the table:
 --8<-- "docs_src/guides/basic/row-tables.py:parse-basic"
 ```
 
-The parsed result is a list. Each item is a record with the declared fields as
-attributes.
+The returned list contains one schema record for each authored data row.
 
 ```bash { .talika-terminal title="Parsed row record" .speed-3}
 --8<-- "docs_src/guides/basic/row-tables.py:record-output"
 ```
 
-That record is intentionally small. It holds parsed values, supports
-`as_dict()`, and carries source metadata for diagnostics and custom validation.
+## Work with Parsed Records
 
-## The Parsed Record Collection and Object
+`parse()` returns an ordinary Python list of schema records. Nothing special is
+required to count, index, iterate, or slice it:
 
-When you call `parse()`, Talika returns a standard Python `list` containing parsed schema records. You can use standard Python collection methods on the result:
+- count records with `len(users)`
+- select one record with `users[0]`
+- iterate with `[user.username for user in users]`
+- take a slice with `users[1:]`
 
-- Check the count: `len(users)`
-- Retrieve by index: `users[0]`
-- Iterate: `[u.username for u in users]`
-- Slice: `users[1:]`
+Each record exposes the declared schema fields as attributes. Three helpers
+are useful when code needs a dictionary or source details:
 
-Each record object provides attributes matching your declared schema fields, plus helper methods and metadata properties:
-
-- **`as_dict()`**: Returns a clean Python `dict` containing only your declared schema attributes and their parsed values. It intentionally excludes metadata and extras, making it perfect for unpacking (e.g. `User(**record.as_dict())`) into domain models.
-- **`table_source`**: An immutable `RecordSource` object storing the record's source location (like the 1-based `row` index in the feature table).
-- **`source_for(field_name)`**: Returns a `TableCell` object representing the source cell for a specific field. You can read its properties:
-    - `value`: The current parsed/transformed string value.
-    - `source_row`: The 1-based row number in the feature file.
-    - `source_column`: The 1-based column number in the feature file.
-    - `source_value`: The raw string value before any transformation.
+- `as_dict()` returns declared field values without metadata or preserved
+  extras. It can be unpacked into a project model with
+  `User(**record.as_dict())`.
+- `table_source` is the immutable `RecordSource` for the whole record. For a
+  row table, it identifies the authored row.
+- `source_for(field_name)` returns the `TableCell` for one declared field. The
+  cell keeps its current `value`, original `source_value`, and one-based
+  `source_row` and `source_column` coordinates.
 
 ```python title="Accessing record and cell metadata"
 --8<-- "docs_src/guides/basic/row-tables.py:record-metadata"

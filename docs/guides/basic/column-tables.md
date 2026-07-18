@@ -38,12 +38,14 @@ each item column and must be the first row in the table.
 --8<-- "docs_src/guides/basic/column-tables.py:contract-basic"
 ```
 
-The contract says:
+The four declarations map table labels to Python attributes:
 
-- `id` maps the ID row `IDs` to the Python attribute `id`. Every item column must have a unique ID in that row.
-- `content_type` maps the required table row `Type` to the attribute `content_type`.
-- `headline` maps the required table row `Headline` to the attribute `headline`.
-- `status` maps the optional table row `Status` to the attribute `status`, which returns `None` when the whole row is absent.
+| Attribute | Table label | Contract |
+| --- | --- | --- |
+| `id` | `IDs` | Required unique identity for every item column. |
+| `content_type` | `Type` | Required content type. |
+| `headline` | `Headline` | Required headline text. |
+| `status` | `Status` | Optional; becomes `None` when the whole row is absent. |
 
 !!! note "ColumnTable requires an ID row"
     A row table may choose whether to declare an ID field. A column table must

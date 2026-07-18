@@ -6,6 +6,33 @@ stable release, additions may refine APIs while preserving the documented
 
 ## Unreleased
 
+## 0.5.0
+
+Talika 0.5 adds deterministic standard-library date and datetime parsing while
+preserving the package's strict, source-aware parser contract.
+
+### Date and datetime parsers
+
+- Add public `date()` and `datetime()` parser factories with strict
+  `%Y-%m-%d` and `%Y-%m-%dT%H:%M:%S` defaults.
+- Accept one explicit `datetime.strptime()` format for alternate date syntax,
+  fractional seconds, and timezone-aware datetimes using `%z`.
+- Reject empty or non-string format declarations immediately and keep
+  whitespace normalization explicit through parser composition.
+- Report invalid calendar values, times, and format mismatches through the
+  existing source-aware `parser_failed` diagnostic.
+- Include configured temporal formats in `Schema.describe()` and
+  `talika describe` output.
+
+### Annotation inference
+
+- Infer the default temporal parsers from `datetime.date` and
+  `datetime.datetime` annotations, including simple optional unions.
+- Keep explicit parsers authoritative when a table uses a custom temporal
+  format.
+- Require static defaults to match the exact temporal annotation so a
+  `datetime` cannot silently satisfy a `date` field.
+
 ## 0.4.0
 
 Talika 0.4 makes field outcomes and parsing return types explicit. Schema

@@ -43,8 +43,8 @@ Python values, validates the result, and keeps errors connected to the original
 
 - **Declarative table contracts** — describe labels, required fields, aliases,
   defaults, and parsing rules in one Python class.
-- **Typed records** — turn cells into `int`, `bool`, `Decimal`, enums, lists,
-  and your own domain values.
+- **Typed records** — turn cells into `int`, `bool`, `Decimal`, `date`,
+  `datetime`, enums, lists, and your own domain values.
 - **Both natural table shapes** — use row-oriented tables for lists and
   column-oriented tables for detailed items.
 - **Errors where the data lives** — report stable error codes with the field,

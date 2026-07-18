@@ -166,11 +166,10 @@ code needs to rewrite old values, rewrite the source table or build a new
 output object rather than mutating the parsed record in place.
 
 !!! tip "Keep parsed records stable"
-    Treat schema records as immutable parse results for practical purposes.
-    They expose source data and extras for inspection, not as a place to repair
-    the table after parsing. Declared record attributes are technically
-    assignable in Talika 0.3; source metadata and extras are enforced as
-    read-only.
+    Use source metadata and extras for inspection, not as a place to repair the
+    authored table after parsing. Declared record attributes remain assignable,
+    but source cells and `table_extras` are read-only so later diagnostics keep
+    the original provenance.
 
 ## Empty Inapplicable Cells Are Not Extras
 

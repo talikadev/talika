@@ -12,12 +12,26 @@ infers parsers for types with obvious, local conversion semantics and returns
 from __future__ import annotations
 
 import types
+from datetime import date as Date
+from datetime import datetime as DateTime
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Literal, Union, get_args, get_origin
 
 from .fields import Parser
-from .parsers import boolean, decimal, floating, integer, optional
+from .parsers import (
+    boolean,
+    decimal,
+    floating,
+    integer,
+    optional,
+)
+from .parsers import (
+    date as date_parser,
+)
+from .parsers import (
+    datetime as datetime_parser,
+)
 
 
 def annotation_accepts_raw_text(annotation: Any) -> bool:
@@ -108,7 +122,7 @@ def annotation_accepts_value(annotation: Any, value: Any) -> bool:
             return isinstance(value, origin)
         except TypeError:
             return False
-    if annotation in (str, int, float, bool, bytes):
+    if annotation in (str, int, float, bool, bytes, Date, DateTime):
         return type(value) is annotation
     try:
         return isinstance(value, annotation)
@@ -131,8 +145,8 @@ def parser_for_annotation(annotation: Any) -> Parser | None:
 
     !!! info
         Supported annotations are ``str``, ``int``, ``float``, ``bool``,
-        ``Decimal``, enums, string ``Literal`` values, and optional unions
-        containing exactly one non-``None`` type.
+        ``Decimal``, ``date``, ``datetime``, enums, string ``Literal`` values,
+        and optional unions containing exactly one non-``None`` type.
 
     !!! warning
         Unsupported unions deliberately return ``None``. This prevents
@@ -157,6 +171,10 @@ def parser_for_annotation(annotation: Any) -> Parser | None:
         return boolean()
     if annotation is Decimal:
         return decimal()
+    if annotation is Date:
+        return date_parser()
+    if annotation is DateTime:
+        return datetime_parser()
     if isinstance(annotation, type) and issubclass(annotation, Enum):
         return _enum_parser(annotation)
 

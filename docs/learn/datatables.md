@@ -61,6 +61,10 @@ The common trap is assuming Python will guess the table meaning correctly.
 --8<-- "docs_src/learn/datatables.py:surprise"
 ```
 
+The surprising result is valid Python, so it may not fail loudly. Instead, the
+scenario can take the wrong branch while the table still looks correct to its
+author.
+
 That is why table parsing should be deliberate. If a feature file says `no`,
 test code should not accidentally treat it as true because Python truthiness
 works that way.

@@ -16,6 +16,15 @@ class UserFields(RowTable):
     active = field(parser=boolean(), default=True)
 # --8<-- [end:contract-basic]
 
+# --8<-- [start:subclass-contract]
+class BaseUsers(RowTable):
+    name = field("name")
+
+
+class ImportedUsers(BaseUsers):
+    name = field("Full name")
+# --8<-- [end:subclass-contract]
+
 # --8<-- [start:parse-basic]
 users = UserFields.parse(
     [

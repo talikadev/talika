@@ -15,9 +15,9 @@ Type annotations let a Talika schema say two things at once:
 - this common field parser can be inferred for me
 
 They are useful when the table value has an obvious conversion, such as
-`int`, `bool`, `Decimal`, an enum, or a small string `Literal`. They are not a
-replacement for field parsers. When the cell syntax is project-specific, the
-parser still needs to be explicit.
+`int`, `bool`, `Decimal`, `date`, `datetime`, an enum, or a small string
+`Literal`. They are not a replacement for field parsers. When the cell syntax
+is project-specific, the parser still needs to be explicit.
 
 ```gherkin title="A table with typed values"
 --8<-- "docs_src/guides/basic/type-annotations.py:feature-basic"
@@ -79,6 +79,8 @@ clear local meaning:
 - `float`
 - `bool`
 - `Decimal`
+- `datetime.date`
+- `datetime.datetime`
 - `Enum` subclasses
 - string `Literal[...]`
 - simple optional unions such as `int | None` or `Optional[int]`
@@ -94,6 +96,18 @@ clear local meaning:
 The inferred parsers behave like the corresponding parser factories. For
 example, `int` uses integer conversion, `Decimal` uses decimal conversion, and
 `bool` accepts only the case-insensitive default tokens `true` and `false`.
+
+Date annotations infer `date()` with the strict `%Y-%m-%d` format. Datetime
+annotations infer `datetime()` with `%Y-%m-%dT%H:%M:%S`. Use an explicit
+parser when the authored syntax uses another format.
+
+```python title="Date and datetime annotation inference"
+--8<-- "docs_src/guides/basic/type-annotations.py:temporal-contract"
+```
+
+```python title="Parsing inferred temporal values"
+--8<-- "docs_src/guides/basic/type-annotations.py:temporal-parse"
+```
 
 If a value cannot be converted, the error still points to the authored cell:
 
@@ -123,12 +137,9 @@ For enum annotations, Talika accepts either the enum value or the enum member
 name. That lets feature files use readable domain text while tests can still
 compare against enum members.
 
-Under the hood, Talika's inferred enum parser operates as follows:
-
-1. Converts the table cell value into a string (`raw = str(value)`).
-2. Iterates through the enum members and checks if `str(member.value)` matches `raw`, or if the member name `member.name` matches `raw`.
-3. Returns the matching enum member when found.
-4. If no member matches, it raises a `ValueError` containing a list of the expected enum values.
+Matching is exact. Talika compares the cell text with each member's string
+value and name, then returns the matching enum member. If nothing matches, the
+normal `parser_failed` diagnostic lists the expected values.
 
 ```python title="Parsing enum values"
 --8<-- "docs_src/guides/basic/type-annotations.py:enum-parse"

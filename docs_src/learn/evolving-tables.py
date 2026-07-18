@@ -21,6 +21,23 @@ class UserTable(RowTable):
 # --8<-- [end:contract]
 
 # --8<-- [start:preserve]
-class LegacyUserTable(UserTable):
+from talika import ColumnTable, TableFields, discriminator, field, id_field
+
+
+class ArticleFields(TableFields):
+    body = field("Body")
+
+
+class PollFields(TableFields):
+    options = field("Options")
+
+
+class LegacyContentTable(ColumnTable):
     inapplicable_fields = "preserve"
+
+    id = id_field("IDs")
+    content_type = discriminator(
+        "Type",
+        variants={"Article": ArticleFields, "Poll": PollFields},
+    )
 # --8<-- [end:preserve]

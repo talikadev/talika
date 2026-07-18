@@ -1,4 +1,14 @@
-from talika import RowTable, TableFields, boolean, discriminator, field
+from datetime import datetime as DateTime
+
+from talika import (
+    RowTable,
+    TableFields,
+    boolean,
+    date,
+    datetime,
+    discriminator,
+    field,
+)
 
 
 def test_describe_returns_complete_machine_readable_contract():
@@ -56,6 +66,25 @@ def test_describe_exposes_the_effective_boolean_contract():
     )
     assert contract.fields[2].parser == contract.fields[0].parser
     assert contract.as_dict()["fields"][0]["parser"] == contract.fields[0].parser
+
+
+def test_describe_exposes_temporal_parser_formats():
+    class Events(RowTable):
+        day = field("day", parser=date())
+        local_time = field(
+            "local time",
+            parser=datetime(format="%d/%m/%Y %H:%M"),
+        )
+        inferred_at: DateTime = field(
+            "inferred at",
+            required=True,
+        )
+
+    contract = Events.describe()
+
+    assert contract.fields[0].parser == "date(format='%Y-%m-%d')"
+    assert contract.fields[1].parser == "datetime(format='%d/%m/%Y %H:%M')"
+    assert contract.fields[2].parser == "datetime(format='%Y-%m-%dT%H:%M:%S')"
 
 
 def test_describe_exposes_resolved_labels_and_effective_empty_policies():

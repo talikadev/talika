@@ -118,7 +118,8 @@ only when the feature really should override the shared meaning.
 
 ## Use the Method Form When It Reads Better
 
-Each `CellDSL` also has `.compose(...)`.
+Each `CellDSL` also has `.compose(...)`. The method form is useful when one DSL
+is clearly the primary vocabulary and the remaining DSLs are supporting layers.
 
 ```python title="Composing from the first DSL"
 --8<-- "docs_src/guides/advanced/cell-dsl-composition.py:method-compose"
@@ -135,7 +136,9 @@ This is equivalent to:
 ```
 
 Use whichever form makes ownership clearest in the surrounding code. The order
-is the same: the receiver DSL is consulted first.
+is the same: the receiver DSL is consulted first. The function form is often
+clearer when every DSL is a peer and no single object should appear to own the
+chain.
 
 !!! note "The receiver goes first"
     `content_cells.compose(shared_cells)` means content rules are tried before

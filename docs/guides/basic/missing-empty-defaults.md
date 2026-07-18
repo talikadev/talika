@@ -30,16 +30,20 @@ blank cell is authored data. A default is schema-owned data.
 
 ## The Field Parsing Lifecycle
 
-Whenever Talika processes a field in a Gherkin data table, it evaluates the presence of the field label, default configurations, empty policies, parsers, and validators in a strict, predictable sequence:
+Talika resolves each field in a predictable order:
 
-1. **Label Presence Check**: Talika checks if the field's canonical label or any of its declared aliases appear in the table header for row tables, or in the field-label column for column tables.
-    - *If absent*: Talika looks for a `default_factory`, then a `default`. If neither is declared, the field becomes `None`.
-    - *If present*: Talika proceeds to the cell evaluation step.
-2. **Empty Value Check**: If the field is present, Talika inspects the cell text.
-    - *If non-empty*: Talika runs the field parser when one is declared. If there is no parser, the text is returned as-is.
-    - *If empty*: Talika evaluates the field's `empty` policy (`raw`, `none`, `parse`, or `error`). If `empty="parse"`, it passes the blank string to the parser. Otherwise, it sets the value based on the policy or raises a `TableError` if `empty="error"` or the field is required.
-3. **Record-Level Validation**: Once field values have been parsed, defaulted, or preserved as text, Talika runs `validate_record(self, context)` on each record.
-4. **Table-Level Validation**: Once all individual records have successfully passed record validation, Talika runs `validate_records(cls, records, context)` to validate relationships across the entire collection.
+1. It looks for the canonical label or an alias. A missing required field is an
+   error. A missing optional field uses its declared default or default
+   factory, and otherwise becomes `None`.
+2. For a present field, it reads the cell. Required fields reject blanks;
+   optional fields apply their `empty` policy.
+3. A non-empty value, or a blank handled by `empty="parse"`, runs through the
+   field parser when one is declared. Values without a parser remain text.
+4. After complete records have been built, Talika runs record validation and
+   then whole-table validation. A failing phase prevents dependent later work.
+
+The distinction to keep in mind is simple: defaults handle missing labels,
+while the `empty` policy handles authored blank cells.
 
 ## Missing Optional Fields
 

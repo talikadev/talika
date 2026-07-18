@@ -41,6 +41,100 @@ ScalarParsers(username='alice', age=34, mask=255, rating=4.5, balance=Decimal('1
 {'username': 'alice', 'age': 34, 'mask': 255, 'rating': 4.5, 'balance': Decimal('12.30')}
 # --8<-- [end:scalar-output]
 
+# --8<-- [start:feature-temporal]
+Given the publication schedule exists
+  | due        | created             | reviewed   | local start      | released                    |
+  | 2026-07-18 | 2026-07-18T14:30:45 | 18/07/2026 | 18/07/2026 14:30 | 2026-07-18T14:30:45+0530 |
+# --8<-- [end:feature-temporal]
+
+# --8<-- [start:temporal-contract]
+from datetime import date as Date
+from datetime import datetime as DateTime
+
+from talika import date as date_parser
+from talika import datetime as datetime_parser
+
+
+class TemporalParsers(RowTable):
+    due = field("due", parser=date_parser())
+    created = field("created", parser=datetime_parser())
+    reviewed = field("reviewed", parser=date_parser(format="%d/%m/%Y"))
+    local_start = field(
+        "local start",
+        parser=datetime_parser(format="%d/%m/%Y %H:%M"),
+    )
+    released = field(
+        "released",
+        parser=datetime_parser(format="%Y-%m-%dT%H:%M:%S%z"),
+    )
+# --8<-- [end:temporal-contract]
+
+# --8<-- [start:temporal-parse]
+schedule = TemporalParsers.parse(
+    [
+        ["due", "created", "reviewed", "local start", "released"],
+        [
+            "2026-07-18",
+            "2026-07-18T14:30:45",
+            "18/07/2026",
+            "18/07/2026 14:30",
+            "2026-07-18T14:30:45+0530",
+        ],
+    ]
+)[0]
+
+assert schedule.due == Date(2026, 7, 18)
+assert schedule.created == DateTime(2026, 7, 18, 14, 30, 45)
+assert schedule.reviewed == Date(2026, 7, 18)
+assert schedule.local_start == DateTime(2026, 7, 18, 14, 30)
+assert schedule.released.utcoffset().total_seconds() == 5.5 * 60 * 60
+# --8<-- [end:temporal-parse]
+
+# --8<-- [start:temporal-output]
+>> schedule.due
+datetime.date(2026, 7, 18)
+
+>> schedule.created
+datetime.datetime(2026, 7, 18, 14, 30, 45)
+
+>> schedule.released.isoformat()
+'2026-07-18T14:30:45+05:30'
+# --8<-- [end:temporal-output]
+
+# --8<-- [start:temporal-whitespace]
+from talika import compose, string
+
+
+class StrictDates(RowTable):
+    due = field("due", parser=date_parser())
+
+
+StrictDates.parse([['due'], [' 2026-07-18 ']])  # parser_failed
+
+
+class PaddedDates(RowTable):
+    due = field(
+        "due",
+        parser=compose(string(strip=True), date_parser()),
+    )
+
+
+assert PaddedDates.parse([['due'], [' 2026-07-18 ']])[0].due == Date(2026, 7, 18)
+# --8<-- [end:temporal-whitespace]
+
+# --8<-- [start:temporal-errors]
+StrictDates.parse([['due'], ['2025-02-29']])  # invalid calendar date
+
+
+class StrictDateTimes(RowTable):
+    created = field("created", parser=datetime_parser())
+
+
+StrictDateTimes.parse(
+    [['created'], ['2026-07-18 14:30:45']]
+)  # the default format requires T
+# --8<-- [end:temporal-errors]
+
 # --8<-- [start:feature-boolean]
 Given the account states exist
   | default active | lifecycle active | strict active |
